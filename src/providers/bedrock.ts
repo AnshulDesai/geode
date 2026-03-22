@@ -16,7 +16,7 @@ export class BedrockProvider implements LLMProvider {
       const command = new ConverseCommand({
         modelId: this.model,
         messages: [{ role: 'user', content: [{ text: prompt }] }],
-        inferenceConfig: { maxTokens: 1024, temperature: 0 },
+        inferenceConfig: { maxTokens: 16384, temperature: 0 },
       });
 
       const response = await this.client.send(command);

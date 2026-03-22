@@ -46,7 +46,7 @@ export class OpenAIProvider implements LLMProvider {
         model: this.model,
         messages: [{ role: 'user', content: prompt }],
         temperature: 0,
-        max_tokens: 1024,
+        max_tokens: 16384,
       });
       return res.choices[0]?.message?.content ?? '';
     } catch (err: any) {
@@ -68,7 +68,7 @@ export class OpenAIProvider implements LLMProvider {
         body: JSON.stringify({
           model: this.model,
           input: prompt,
-          max_output_tokens: 1024,
+          max_output_tokens: 16384,
           reasoning: { effort: 'medium' },
         }),
       });
