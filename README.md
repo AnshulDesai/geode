@@ -153,27 +153,23 @@ output: terminal  # terminal | json | both
 
 ## How It Works
 
-```
-URL or file
-    │
-    ▼
-Content extraction (@mozilla/readability)
-    │
-    ▼
-Truncate if >6,000 tokens
-    │
-    ├──────────────┬──────────────┬──────────────┐
-    ▼              ▼              ▼              ▼
-Citability    Structure    Authority    Fluency
-(LLM call)    (LLM call)   (LLM call)   (LLM call)
-    │              │              │              │
-    └──────────────┴──────────────┴──────────────┘
-                   │
-                   ▼
-          Score aggregation
-                   │
-                   ▼
-     Terminal scorecard / JSON report
+```mermaid
+graph TD
+    A[URL or file] --> B[Content extraction<br>@mozilla/readability]
+    B --> C{> 6,000 tokens?}
+    C -->|Yes| D[Truncate at paragraph boundary]
+    C -->|No| E[Pass through]
+    D --> F
+    E --> F[Parallel LLM evaluation]
+    F --> G[Citability]
+    F --> H[Content Structure]
+    F --> I[Authority Signals]
+    F --> J[Fluency & Clarity]
+    G --> K[Score aggregation]
+    H --> K
+    I --> K
+    J --> K
+    K --> L[Terminal scorecard / JSON report]
 ```
 
 All 4 LLM calls run concurrently. If rate-limited, geode falls back to sequential with exponential backoff.
