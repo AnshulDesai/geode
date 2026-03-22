@@ -2,3 +2,4 @@ node_modules/
 dist/
 .geoderc
 geode-report.json
+geode
