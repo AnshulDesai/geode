@@ -50,8 +50,16 @@ export function startServer(port: number, cliFlags: Record<string, string | unde
         `<head$1><base href="${base.origin}${base.pathname.replace(/\/[^/]*$/, '/')}">`,
       );
 
-      // Inject highlight script
-      html = html.replace('</body>', `<script>${getHighlightScript()}</script></body>`);
+      // Strip CSP meta tags that block inline scripts
+      html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, '');
+
+      // Inject styles to disable clicks
+      const injectCss = `<style>a, button, input, select, textarea, [onclick], [role="button"] { pointer-events: none !important; cursor: default !important; } #nprogress, .pace, .loading-bar, [role="progressbar"], .progress-bar, .nprogress-busy { display: none !important; }</style>`;
+      if (/<\/head>/i.test(html)) {
+        html = html.replace(/<\/head>/i, injectCss + '</head>');
+      } else {
+        html = injectCss + html;
+      }
 
       res.setHeader('Content-Type', 'text/html');
       res.send(html);
@@ -174,62 +182,4 @@ export function startServer(port: number, cliFlags: Record<string, string | unde
   });
 }
 
-function getHighlightScript(): string {
-  return `
-    window.geodeHighlight = function(location) {
-      // Remove previous highlights
-      document.querySelectorAll('.geode-highlight').forEach(el => el.classList.remove('geode-highlight'));
-
-      if (!location) return;
-
-      // Try to find by heading text
-      const clean = location.replace(/^§\\s*/, '').replace(/,\\s*paragraph.*$/i, '');
-      const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
-      let target = null;
-
-      for (const h of headings) {
-        if (h.textContent && h.textContent.toLowerCase().includes(clean.toLowerCase())) {
-          target = h;
-          break;
-        }
-      }
-
-      // If no heading match, try text search across paragraphs
-      if (!target) {
-        const allEls = document.querySelectorAll('p, li, div, section, article');
-        for (const el of allEls) {
-          if (el.textContent && el.textContent.toLowerCase().includes(clean.toLowerCase())) {
-            target = el;
-            break;
-          }
-        }
-      }
-
-      if (target) {
-        target.classList.add('geode-highlight');
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    };
-
-    // Inject highlight styles + suppress loading bars
-    const style = document.createElement('style');
-    style.textContent = \`
-      .geode-highlight {
-        outline: 3px solid #c4a882 !important;
-        outline-offset: 4px !important;
-        background: rgba(196, 168, 130, 0.1) !important;
-        border-radius: 4px !important;
-        transition: outline-color 0.3s, background 0.3s !important;
-      }
-      /* Suppress common loading bars */
-      #nprogress, .pace, .loading-bar, [role="progressbar"],
-      .progress-bar, .nprogress-busy { display: none !important; }
-      /* Block all clicks but allow scrolling */
-      a, button, input, select, textarea, [onclick], [role="button"] {
-        pointer-events: none !important;
-        cursor: default !important;
-      }
-    \`;
-    document.head.appendChild(style);
-  `;
-}
+// Highlight script removed — overlay approach used instead from parent frame

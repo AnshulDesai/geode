@@ -25,8 +25,9 @@ Respond in JSON only. No markdown fences, no explanation outside the JSON.
 
 IMPORTANT for actions:
 - Each suggestion must be SPECIFIC and DIFFERENT from other suggestions
-- Location must reference a SPECIFIC heading or paragraph, not "throughout the document"
-- If an issue truly applies everywhere, pick the single worst example and point to it
+- For location: quote an EXACT phrase (5-15 words) from the content that appears near where the change should be made. Use the format: "near: [exact quote from content]"
+- If the change involves adding something new, quote the nearest existing text where it should be inserted
+- If no relevant text exists (e.g. schema/meta changes), use "source: [description]"
 - Maximum 4 actions, prioritize the highest-impact fixes
 
 {
@@ -36,7 +37,7 @@ IMPORTANT for actions:
     {
       "priority": "<high|medium|low>",
       "suggestion": "<specific, actionable fix — what exactly to change>",
-      "location": "<specific heading, paragraph, or section reference>"
+      "location": "<exact quote (5-15 words) from the content near where this applies, prefixed with 'near:' — e.g. 'near: I started blogging back in 2009'. For source-code-only changes use 'source: head section'>"
     }
   ]
 }`;

@@ -180,19 +180,15 @@
   /* ── Actions ── */
   .actions { padding: 0 var(--panel-pad) var(--panel-pad); border-top: 1px solid var(--border-subtle); padding-top: 24px; }
   .action {
-    padding: 14px 0; cursor: pointer;
+    padding: 14px var(--panel-pad); margin: 0 calc(-1 * var(--panel-pad));
     border-bottom: 1px solid var(--border-subtle);
-    transition: all 0.15s;
+    transition: background 0.15s;
     opacity: 0; transform: translateY(6px);
   }
   .action.revealed { opacity: 1; transform: translateY(0); }
   .action:last-child { border-bottom: none; }
-  .action:hover { transform: translateX(8px); }
-  .action:hover .action-text { color: var(--text); }
-  .action:hover .action-priority { opacity: 1; }
   .action.active {
-    background: var(--accent-soft); border-radius: 6px;
-    border-bottom-color: transparent;
+    background: var(--accent-soft);
   }
   .action-priority {
     display: inline-block; font-size: 9px; font-weight: 600;
@@ -452,8 +448,8 @@
       </div>
     </div>
     <div class="page-frame-wrap" id="pageWrap">
-      <div class="page-click-guard" id="clickGuard"></div>
-      <iframe id="pageFrame" sandbox="allow-same-origin allow-scripts" title="Page preview"></iframe>
+      <iframe id="pageFrame" sandbox="allow-same-origin" title="Page preview"></iframe>
+      <div id="highlightOverlay" style="position:absolute;pointer-events:none;outline:3px solid var(--accent);outline-offset:2px;background:rgba(201,168,124,0.1);border-radius:4px;display:none;z-index:10"></div>
     </div>
   </div>
 </main>
@@ -724,6 +720,128 @@ form.addEventListener('submit', async e => {
   }
 });
 
+const overlay = document.getElementById('highlightOverlay');
+let highlightTarget = null;
+const matchCache = new Map();
+
+function findElementInIframe(location, suggestion) {
+  try {
+    const doc = pageFrame.contentDocument;
+    if (!doc) return null;
+
+    let clean = location
+      .replace(/^§\s*/, '')
+      .replace(/,\s*paragraph.*$/i, '')
+      .replace(/^Sections?:\s*/i, '')
+      .replace(/^Inside the\s*/i, '')
+      .replace(/<[^>]+>/g, '')
+      .split(/\s+and\s+/i)[0]
+      .trim();
+
+    const nearMatch = location.match(/near:\s*(.+)/i);
+    const searchTerms = [];
+    if (nearMatch) {
+      searchTerms.push(nearMatch[1].trim());
+    } else {
+      const quoted = location.match(/[''""]([^''""\n]{8,})[''""]/);
+      if (quoted) searchTerms.push(quoted[1]);
+      else if (!/^(throughout|entire|overall|end of|beginning|top of|bottom of|source:)/i.test(clean)) {
+        searchTerms.push(clean.replace(/[''"]/g, ''));
+      }
+      const suggestionQuoted = suggestion?.match(/[''""]([^''""\n]{8,})[''""]/);
+      if (suggestionQuoted) searchTerms.push(suggestionQuoted[1]);
+    }
+
+    if (/^source:/i.test(location.trim())) return null;
+
+    for (const term of searchTerms) {
+      const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      for (const h of headings) {
+        if (h.textContent?.toLowerCase().includes(term.toLowerCase())) return h;
+      }
+      const keywords = term.toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 5);
+      if (keywords.length > 0) {
+        const els = doc.querySelectorAll('p, li, h2, h3, h4, blockquote, figcaption');
+        for (const el of els) {
+          if (el.children.length > 15) continue;
+          const text = el.textContent?.toLowerCase() || '';
+          const hits = keywords.filter(k => text.includes(k)).length;
+          if (hits >= Math.max(2, Math.ceil(keywords.length * 0.5))) return el;
+        }
+      }
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
+function precomputeMatches(actions) {
+  matchCache.clear();
+  // Wait for iframe to load then compute
+  const compute = () => {
+    try {
+      if (!pageFrame.contentDocument?.body) { setTimeout(compute, 200); return; }
+      actions.forEach((a, i) => {
+        const el = findElementInIframe(a.location, a.suggestion);
+        if (el) matchCache.set(i, el);
+      });
+    } catch(e) {}
+  };
+  setTimeout(compute, 300);
+  setTimeout(compute, 1000); // retry after full load
+}
+
+function updateOverlayPosition() {
+  if (!highlightTarget || overlay.style.display === 'none') return;
+  try {
+    const rect = highlightTarget.getBoundingClientRect();
+    const frameRect = pageFrame.getBoundingClientRect();
+    const wrapRect = pageWrap.getBoundingClientRect();
+    overlay.style.top = (frameRect.top - wrapRect.top + rect.top) + 'px';
+    overlay.style.left = (frameRect.left - wrapRect.left + rect.left) + 'px';
+    overlay.style.width = rect.width + 'px';
+    overlay.style.height = rect.height + 'px';
+  } catch(e) {}
+}
+
+// Continuously track overlay position while visible
+let rafId = null;
+function trackOverlay() {
+  updateOverlayPosition();
+  if (highlightTarget && overlay.style.display !== 'none') {
+    rafId = requestAnimationFrame(trackOverlay);
+  }
+}
+
+function startTracking() {
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(trackOverlay);
+}
+
+// Update overlay on iframe scroll — use requestAnimationFrame for smooth tracking
+function attachScrollListener() {
+  try {
+    const iframeDoc = pageFrame.contentDocument || pageFrame.contentWindow?.document;
+    if (iframeDoc) {
+      iframeDoc.addEventListener('scroll', () => requestAnimationFrame(updateOverlayPosition), { passive: true });
+      iframeDoc.defaultView?.addEventListener('scroll', () => requestAnimationFrame(updateOverlayPosition), { passive: true });
+    }
+  } catch(e) {}
+}
+pageFrame.addEventListener('load', attachScrollListener);
+
+function highlightInPreview(index) {
+  overlay.style.display = 'none';
+  highlightTarget = null;
+  const target = matchCache.get(index);
+  if (target) {
+    highlightTarget = target;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    updateOverlayPosition();
+    overlay.style.display = 'block';
+    startTracking();
+  }
+}
+
 function render(r) {
   // Persist to localStorage history
   const history = JSON.parse(localStorage.getItem('geode-history') || '[]');
@@ -788,16 +906,13 @@ function doRender(r) {
       <div class="action-text">${a.suggestion}</div>
       <div class="action-loc">→ ${a.location}</div>`;
     d.onclick = () => {
+      const wasActive = d.classList.contains('active');
       document.querySelectorAll('.action').forEach(el => el.classList.remove('active'));
+      overlay.style.display = 'none';
+      highlightTarget = null;
+      if (wasActive) return;
       d.classList.add('active');
-      // Flash page panel border
-      pageWrap.classList.add('flash');
-      setTimeout(() => pageWrap.classList.remove('flash'), 400);
-      try {
-        document.getElementById('clickGuard').style.pointerEvents = 'none';
-        pageFrame.contentWindow.geodeHighlight(a.location);
-        setTimeout(() => document.getElementById('clickGuard').style.pointerEvents = '', 100);
-      } catch(e) {}
+      highlightInPreview(i);
     };
     aEl.appendChild(d);
     setTimeout(() => d.classList.add('revealed'), 600 + cats.length * 100 + i * 80);
@@ -807,6 +922,9 @@ function doRender(r) {
   const meta = document.getElementById('meta');
   meta.innerHTML = `${(r.metadata.duration_ms/1000).toFixed(1)}s<br>${r.metadata.categories_scored} categories scored<br>${r.metadata.provider}/${r.metadata.model}`;
   setTimeout(() => meta.classList.add('revealed'), 800 + cats.length * 100 + actions.length * 80);
+
+  // Precompute highlight matches after iframe loads
+  precomputeMatches(actions);
 }
 
 // Restore last analysis on page load
