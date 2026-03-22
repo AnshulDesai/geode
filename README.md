@@ -149,6 +149,17 @@ Options:
   --region <name>           AWS region for Bedrock (default: us-east-1)
 ```
 
+## Web UI
+
+Run `geode serve` to launch the inspector — a split-panel interface with your score report on the left and a live page preview on the right.
+
+- Click action items to scroll and highlight the relevant section on the page
+- Configure provider, model, and API keys in Settings (⚙)
+- Analysis history persists across sessions (stored in your browser)
+- Supports multi-run averaging (1×, 3×, 5×) for stable scores
+
+All processing happens locally — your API keys never leave your machine.
+
 ## Scoring Categories
 
 geode evaluates content across 7 categories, based on research from the [GEO paper (KDD 2024)](https://arxiv.org/pdf/2311.09735), [First Page Sage's algorithm study](https://firstpagesage.com/seo-blog/generative-engine-optimization-geo-explanation/) (11,128 queries across ChatGPT, Gemini, Perplexity, Claude), and current GEO best practices.
