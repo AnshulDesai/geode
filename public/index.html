@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>geode — GEO Score Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #111110; --surface: #19191a; --raised: #222221;
+    --border: #2c2c2a; --border-subtle: #232322;
+    --text: #ededec; --text-secondary: #a3a3a0; --text-dim: #5c5c58;
+    --accent: #c9a87c; --accent-glow: rgba(201,168,124,0.08);
+    --high: #e5534b; --mid: #d4a72c; --good: #57ab5a;
+    --radius: 8px;
+  }
+  body {
+    font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text);
+    height: 100vh; display: flex; flex-direction: column;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+
+  /* ── Header ── */
+  .header {
+    height: 52px; padding: 0 20px;
+    display: flex; align-items: center; gap: 24px;
+    border-bottom: 1px solid var(--border-subtle); flex-shrink: 0;
+  }
+  .wordmark {
+    font-family: 'Instrument Serif', serif; font-size: 20px;
+    color: var(--accent); letter-spacing: -0.01em;
+  }
+  .url-form { display: flex; flex: 1; max-width: 580px; gap: 6px; align-items: center; }
+  .url-input {
+    flex: 1; padding: 7px 12px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text);
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .url-input::placeholder { color: var(--text-dim); }
+  .url-input:focus { border-color: var(--accent); }
+  .runs-select {
+    padding: 7px 8px; background: transparent; border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text-secondary); font-family: 'DM Sans', sans-serif;
+    font-size: 12px; outline: none; cursor: pointer; appearance: none;
+    text-align: center; width: 62px;
+  }
+  .runs-select:focus { border-color: var(--accent); }
+  .score-btn {
+    padding: 7px 18px; border: none; border-radius: 6px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    background: var(--accent); color: var(--bg);
+  }
+  .score-btn:hover { filter: brightness(1.1); }
+  .score-btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; }
+
+  /* ── Layout ── */
+  .main { display: flex; flex: 1; overflow: hidden; }
+  .page-panel { flex: 1; background: #fff; position: relative; }
+  .page-panel iframe { width: 100%; height: 100%; border: none; }
+  .page-empty {
+    height: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: var(--surface); gap: 8px;
+  }
+  .page-empty-text { color: var(--text-dim); font-size: 13px; }
+
+  /* ── Score Panel ── */
+  .score-panel {
+    width: 380px; flex-shrink: 0; overflow-y: auto;
+    border-right: 1px solid var(--border-subtle);
+    background: var(--surface);
+  }
+  .score-panel::-webkit-scrollbar { width: 3px; }
+  .score-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Score Hero ── */
+  .score-hero { padding: 40px 28px 32px; }
+  .score-number {
+    font-family: 'Instrument Serif', serif;
+    font-size: 80px; line-height: 0.85; letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-max {
+    font-family: 'DM Sans', sans-serif; font-size: 18px;
+    color: var(--text-dim); font-weight: 400; margin-left: 2px;
+  }
+  .score-label {
+    margin-top: 10px; font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim);
+  }
+
+  /* ── Categories ── */
+  .categories { padding: 0 28px 28px; }
+  .section-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--text-dim); font-weight: 600; margin-bottom: 16px;
+  }
+  .cat { margin-bottom: 12px; }
+  .cat-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .cat-name { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+  .cat-val { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cat-track { height: 3px; background: var(--raised); border-radius: 2px; overflow: hidden; }
+  .cat-fill { height: 100%; border-radius: 2px; transition: width 1s cubic-bezier(0.16,1,0.3,1); }
+
+  /* ── Actions ── */
+  .actions { padding: 0 28px 28px; border-top: 1px solid var(--border-subtle); padding-top: 24px; }
+  .action {
+    padding: 12px 0; cursor: pointer;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 0.1s;
+  }
+  .action:last-child { border-bottom: none; }
+  .action:hover .action-text { color: var(--text); }
+  .action.active { background: var(--accent-glow); margin: 0 -28px; padding: 12px 28px; border-radius: 4px; }
+  .action-priority {
+    display: inline-block; font-size: 9px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .p-high { color: var(--high); }
+  .p-medium { color: var(--mid); }
+  .p-low { color: var(--good); }
+  .action-text { font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); transition: color 0.1s; }
+  .action-loc {
+    margin-top: 4px; font-size: 11.5px; color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Meta ── */
+  .panel-meta {
+    padding: 16px 28px; border-top: 1px solid var(--border-subtle);
+    font-size: 11px; color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── States ── */
+  .loading { display: none; padding: 80px 28px; }
+  .loading.active { display: block; }
+  .loader-bar { height: 2px; background: var(--raised); border-radius: 1px; overflow: hidden; margin-bottom: 20px; }
+  .loader-fill {
+    height: 100%; width: 30%; background: var(--accent);
+    border-radius: 1px; animation: slide 1.2s ease-in-out infinite;
+  }
+  @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+  .loading-text { font-size: 13px; color: var(--text-dim); }
+
+  .empty-state { padding: 80px 28px; }
+  .empty-text { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+
+  .error {
+    margin: 0 28px 16px; padding: 10px 14px;
+    background: rgba(229,83,75,0.08); border-radius: 6px;
+    color: var(--high); font-size: 13px; display: none;
+  }
+  .error.active { display: block; }
+
+  /* ── Utility ── */
+  .sc { color: var(--good); }
+  .sc-mid { color: var(--mid); }
+  .sc-low { color: var(--high); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="wordmark">geode</div>
+  <form class="url-form" id="urlForm">
+    <input class="url-input" id="urlInput" type="url" placeholder="https://your-blog.com/article" required>
+    <select class="runs-select" id="runsSelect" title="Number of runs to average">
+      <option value="1">1 run</option>
+      <option value="3">3 runs</option>
+      <option value="5">5 runs</option>
+    </select>
+    <button class="score-btn" id="scoreBtn" type="submit">Score</button>
+  </form>
+</header>
+
+<main class="main">
+  <aside class="score-panel" id="scorePanel">
+    <div class="loading" id="loading">
+      <div class="loader-bar"><div class="loader-fill"></div></div>
+      <div class="loading-text">Analyzing 7 categories…</div>
+    </div>
+
+    <div id="results" style="display:none">
+      <div class="error" id="error"></div>
+
+      <div class="score-hero">
+        <div>
+          <span class="score-number" id="overallScore">—</span>
+          <span class="score-max">/ 10</span>
+        </div>
+        <div class="score-label">GEO Score</div>
+      </div>
+
+      <div class="categories">
+        <div class="section-label">Categories</div>
+        <div id="categories"></div>
+      </div>
+
+      <div class="actions">
+        <div class="section-label">Action Items</div>
+        <div id="actions"></div>
+      </div>
+
+      <div class="panel-meta" id="meta"></div>
+    </div>
+
+    <div class="empty-state" id="empty">
+      <div class="empty-text">
+        Paste a URL and click <strong>Score</strong> to analyze your content for AI search visibility.
+      </div>
+    </div>
+  </aside>
+
+  <div class="page-panel">
+    <div class="page-empty" id="pageEmpty">
+      <div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--text-dim);opacity:0.4">geode</div>
+      <div class="page-empty-text">Enter a URL to preview and score</div>
+    </div>
+    <iframe id="pageFrame" style="display:none" sandbox="allow-same-origin allow-scripts"></iframe>
+  </div>
+</main>
+
+<script>
+const form = document.getElementById('urlForm');
+const input = document.getElementById('urlInput');
+const btn = document.getElementById('scoreBtn');
+const pageFrame = document.getElementById('pageFrame');
+const pageEmpty = document.getElementById('pageEmpty');
+const loading = document.getElementById('loading');
+const results = document.getElementById('results');
+const empty = document.getElementById('empty');
+const errorEl = document.getElementById('error');
+
+const runsSelect = document.getElementById('runsSelect');
+
+function sc(s) {
+  if (s >= 7) return ['var(--good)', 'sc'];
+  if (s >= 4) return ['var(--mid)', 'sc-mid'];
+  return ['var(--high)', 'sc-low'];
+}
+
+function catLabel(k) {
+  return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const url = input.value.trim();
+  if (!url) return;
+
+  pageEmpty.style.display = 'none';
+  pageFrame.style.display = 'block';
+  pageFrame.src = '/api/proxy?url=' + encodeURIComponent(url);
+
+  empty.style.display = 'none';
+  results.style.display = 'none';
+  loading.classList.add('active');
+  errorEl.classList.remove('active');
+  btn.disabled = true;
+  btn.textContent = 'Scoring…';
+
+  try {
+    const res = await fetch('/api/score', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, runs: parseInt(runsSelect.value, 10) }),
+    });
+    const report = await res.json();
+    if (report.error) {
+      errorEl.textContent = report.error;
+      errorEl.classList.add('active');
+      loading.classList.remove('active');
+      results.style.display = 'block';
+      return;
+    }
+    render(report);
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.classList.add('active');
+    loading.classList.remove('active');
+    results.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Score';
+  }
+});
+
+function render(r) {
+  loading.classList.remove('active');
+  results.style.display = 'block';
+
+  const [color, cls] = sc(r.overall_score);
+  const os = document.getElementById('overallScore');
+  os.textContent = r.overall_score.toFixed(1);
+  os.style.color = color;
+
+  const cEl = document.getElementById('categories');
+  cEl.innerHTML = '';
+  for (const [k, v] of Object.entries(r.categories)) {
+    const [c] = sc(v.score);
+    cEl.innerHTML += `<div class="cat">
+      <div class="cat-top">
+        <span class="cat-name">${catLabel(k)}</span>
+        <span class="cat-val" style="color:${c}">${v.score.toFixed(1)}</span>
+      </div>
+      <div class="cat-track"><div class="cat-fill" style="width:${v.score*10}%;background:${c}"></div></div>
+    </div>`;
+  }
+
+  const aEl = document.getElementById('actions');
+  aEl.innerHTML = '';
+  const seen = new Set();
+  r.actions_ranked.filter(a => {
+    if (seen.has(a.suggestion)) return false;
+    seen.add(a.suggestion); return true;
+  }).slice(0, 8).forEach(a => {
+    const d = document.createElement('div');
+    d.className = 'action';
+    d.innerHTML = `<div class="action-priority p-${a.priority}">${a.priority}</div>
+      <div class="action-text">${a.suggestion}</div>
+      <div class="action-loc">→ ${a.location}</div>`;
+    d.onclick = () => {
+      document.querySelectorAll('.action').forEach(el => el.classList.remove('active'));
+      d.classList.add('active');
+      try { pageFrame.contentWindow.geodeHighlight(a.location); } catch(e) {}
+    };
+    aEl.appendChild(d);
+  });
+
+  document.getElementById('meta').textContent =
+    `${r.metadata.categories_scored} categories · ${(r.metadata.duration_ms/1000).toFixed(1)}s · ${r.metadata.provider}/${r.metadata.model}`;
+}
+</script>
+</body>
+</html>

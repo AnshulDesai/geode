@@ -7,6 +7,7 @@ import { OpenAIProvider } from './providers/openai.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { scoreContent, buildReport } from './scorer.js';
 import { printTerminal, writeJson } from './output.js';
+import { startServer } from './server.js';
 import type { LLMProvider } from './types.js';
 
 const program = new Command();
@@ -99,6 +100,16 @@ program
     }
 
     process.exit(failed > 0 ? 2 : 0);
+  });
+
+program
+  .command('serve')
+  .description('Start the geode web UI')
+  .option('--port <n>', 'Port number', '3000')
+  .option('--model <name>', 'Override model')
+  .option('--provider <name>', 'Override provider: openai | anthropic')
+  .action((opts: any) => {
+    startServer(parseInt(opts.port, 10), { provider: opts.provider, model: opts.model });
   });
 
 program.parse();

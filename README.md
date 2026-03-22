@@ -104,6 +104,10 @@ geode score https://example.com --runs 3
 
 # Debug output
 geode score https://example.com --verbose
+
+# Launch the web UI (inspector mode)
+geode serve
+# Then open http://localhost:3000
 ```
 
 ### CLI Reference
@@ -129,6 +133,15 @@ Exit codes:
   0  All categories scored
   1  Fatal error
   2  Partial results (some categories failed)
+```
+
+```
+geode serve [options]
+
+Options:
+  --port <n>                Port number (default: 3000)
+  --model <name>            Override model
+  --provider <name>         openai | anthropic
 ```
 
 ## Scoring Categories
@@ -218,6 +231,7 @@ Cost scales linearly with article length. Use `gpt-4o-mini` or `claude-haiku` fo
 - [x] OpenAI + Anthropic support
 - [x] JSON output mode
 - [x] Freshness, Schema & Technical, Topical Depth categories
+- [x] Web UI with page inspector (`geode serve`)
 - [ ] Custom category weights in `.geoderc`
 - [ ] `--quick` mode (single prompt, ~5x cheaper)
 - [ ] Batch mode (`--batch urls.txt`)
