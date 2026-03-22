@@ -7,13 +7,9 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪨</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif&family=JetBrains+Mono:wght@400&display=block" as="style">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif&family=JetBrains+Mono:wght@400&display=block" rel="stylesheet">
 <style>
-  @font-face { font-family: 'DM Sans'; font-display: block; }
-  @font-face { font-family: 'Instrument Serif'; font-display: block; }
-  @font-face { font-family: 'JetBrains Mono'; font-display: block; }
-  html { visibility: hidden; }
-  html.fonts-ready { visibility: visible; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
     --bg: #111110; --surface: #181816; --raised: #222220;
@@ -156,6 +152,8 @@
     transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16,1,0.3,1);
   }
   .score-number.revealed { opacity: 1; transform: translateY(0); }
+  .score-number.pulse { animation: scorePulse 0.4s ease; }
+  @keyframes scorePulse { 0% { transform: scale(1); } 50% { transform: scale(1.04); } 100% { transform: scale(1); } }
   .score-max {
     font-family: 'DM Sans', sans-serif; font-size: 18px;
     color: var(--text-dim); font-weight: 400; margin-left: 2px;
@@ -228,7 +226,7 @@
     border-radius: 1px; animation: slide 1.2s ease-in-out infinite;
   }
   @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
-  .loading-text { font-size: 13px; color: var(--text-dim); margin-bottom: 32px; }
+  .loading-text { font-size: 13px; color: var(--text-dim); transition: opacity 0.15s ease; }
   .loading-cats { display: flex; flex-direction: column; gap: 10px; }
   .loading-cat { display: flex; align-items: center; gap: 10px; }
   .loading-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background 0.3s; }
@@ -349,7 +347,7 @@
   .score-btn:hover { filter: brightness(1.1); transform: scale(1.02); }
   .score-btn:active { transform: scale(0.97); }
 
-  .settings-btn { transition: all 0.2s var(--ease-out-soft); }
+  .settings-btn { transition: color 0.2s, border-color 0.2s; }
   .settings-btn:hover { color: var(--accent); border-color: var(--accent); }
 
   .history-btn { transition: all 0.15s var(--ease-out-soft); }
@@ -374,7 +372,11 @@
   /* Page frame flash */
   .page-frame-wrap { transition: box-shadow 0.3s var(--ease-out-soft); }
 
-  /* Reduced motion */
+  /* ── Focus styles ── */
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  input:focus-visible, select:focus-visible { outline: none; }
+
+  /* ── Reduced motion ── */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -391,9 +393,9 @@
     <div class="wordmark">geode</div>
   </div>
   <div class="header-right">
-    <button class="settings-btn" id="settingsBtn" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button class="settings-btn" id="settingsBtn" type="button" aria-label="Settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     <form class="url-form" id="urlForm">
-      <input class="url-input" id="urlInput" type="url" placeholder="https://your-blog.com/article" required>
+      <input class="url-input" id="urlInput" type="url" placeholder="https://your-blog.com/article" required aria-label="URL to analyze">
       <button class="score-btn" id="scoreBtn" type="submit">Score</button>
     </form>
   </div>
@@ -451,7 +453,7 @@
     </div>
     <div class="page-frame-wrap" id="pageWrap">
       <div class="page-click-guard" id="clickGuard"></div>
-      <iframe id="pageFrame" sandbox="allow-same-origin allow-scripts"></iframe>
+      <iframe id="pageFrame" sandbox="allow-same-origin allow-scripts" title="Page preview"></iframe>
     </div>
   </div>
 </main>
@@ -511,9 +513,8 @@
 </div>
 
 <script>
-document.fonts.ready.then(() => document.documentElement.classList.add('fonts-ready'));
-// Fallback in case fonts take too long
-setTimeout(() => document.documentElement.classList.add('fonts-ready'), 1000);
+document.fonts.ready.then(() => {});
+// Fonts handled by Google Fonts display=block
 
 const form = document.getElementById('urlForm');
 const input = document.getElementById('urlInput');
@@ -622,6 +623,53 @@ function sc(s) {
   if (s >= 4) return 'var(--mid)';
   return 'var(--high)';
 }
+
+const LOADING_MESSAGES = [
+  'Asking the AI to judge your content... no pressure',
+  'Scanning for vibes... and also schema markup',
+  'Checking if your headings pass the vibe check',
+  'Rating your E-E-A-T... not the food kind',
+  'Looking for citations... Wikipedia doesn\'t count',
+  'Calculating how quotable you are',
+  'Seeing if an AI would actually cite this',
+  'Judging your content harder than the internet judges everything',
+  'Doing the work your SEO consultant charges $200/hr for',
+  'Sending 7 LLMs to roast your blog post simultaneously',
+  'Checking if Perplexity would swipe right on your content',
+  'Running the squint test on your heading hierarchy',
+];
+
+let loadingMsgInterval;
+function startLoadingMessages() {
+  const el = document.querySelector('.loading-text');
+  let i = 0;
+  el.textContent = LOADING_MESSAGES[0];
+  loadingMsgInterval = setInterval(() => {
+    i = (i + 1) % LOADING_MESSAGES.length;
+    el.style.opacity = '0';
+    setTimeout(() => { el.textContent = LOADING_MESSAGES[i]; el.style.opacity = '1'; }, 150);
+  }, 2000);
+}
+function stopLoadingMessages() { clearInterval(loadingMsgInterval); }
+
+function countUp(el, target, color, duration = 800) {
+  const start = performance.now();
+  const update = (now) => {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+    const val = (eased * target).toFixed(1);
+    el.textContent = val;
+    el.style.color = sc(parseFloat(val));
+    if (t < 1) requestAnimationFrame(update);
+    else {
+      el.textContent = target.toFixed(1);
+      el.style.color = color;
+      el.classList.add('pulse');
+      setTimeout(() => el.classList.remove('pulse'), 400);
+    }
+  };
+  requestAnimationFrame(update);
+}
 function catLabel(k) { return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
 
 form.addEventListener('submit', async e => {
@@ -638,6 +686,7 @@ form.addEventListener('submit', async e => {
   errorEl.classList.remove('active');
   btn.disabled = true;
   btn.textContent = 'Scoring…';
+  startLoadingMessages();
 
   try {
     const res = await fetch('/api/score', {
@@ -669,6 +718,7 @@ form.addEventListener('submit', async e => {
     loading.classList.remove('active');
     results.style.display = 'block';
   } finally {
+    stopLoadingMessages();
     btn.disabled = false;
     btn.textContent = 'Score';
   }
@@ -690,11 +740,17 @@ function doRender(r) {
   loading.classList.remove('active');
   results.style.display = 'block';
 
-  // Score reveal
+  // Reset animation states
+  document.getElementById('overallScore').classList.remove('revealed', 'pulse');
+  document.getElementById('meta').classList.remove('revealed');
+
+  // Score count-up reveal
   const os = document.getElementById('overallScore');
-  os.style.color = sc(r.overall_score);
-  os.textContent = r.overall_score.toFixed(1);
-  requestAnimationFrame(() => os.classList.add('revealed'));
+  os.textContent = '0.0';
+  requestAnimationFrame(() => {
+    os.classList.add('revealed');
+    setTimeout(() => countUp(os, r.overall_score, sc(r.overall_score)), 200);
+  });
 
   // Categories — staggered reveal
   const cEl = document.getElementById('categories');
@@ -818,6 +874,10 @@ function renderHistory() {
     historyDropdown.appendChild(item);
   });
 }
+
+// 🪨
+console.log('%c🪨 geode', 'font-size:20px;font-weight:bold;color:#c9a87c');
+console.log('%cOpen-source GEO scorer — https://github.com/AnshulDesai/geode', 'color:#737373');
 </script>
 </body>
 </html>
