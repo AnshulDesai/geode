@@ -28,10 +28,12 @@
     --panel-pad: 28px;
     --preview-inset: 12px;
   }
+  html, body { overflow: hidden; overscroll-behavior: none; }
   body {
     font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text);
     height: 100vh; display: flex; flex-direction: column;
     -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    overflow: hidden; position: fixed; width: 100%; top: 0; left: 0;
   }
 
   /* ── Header ── */
@@ -91,10 +93,11 @@
 
   /* ── Score Panel ── */
   .score-panel {
-    width: var(--panel-width); flex-shrink: 0; overflow-y: auto;
+    width: var(--panel-width); flex-shrink: 0; overflow-y: auto; overflow-x: hidden;
     border-right: 1px solid var(--border-subtle);
     background: var(--surface);
     display: flex; flex-direction: column;
+    overscroll-behavior: contain;
   }
   .score-panel::-webkit-scrollbar { width: 0; }
   .score-panel { scrollbar-width: none; }
@@ -296,7 +299,6 @@
     background: transparent; border: 1px solid var(--border); border-radius: 6px;
     cursor: pointer; font-family: 'DM Sans', sans-serif;
     user-select: none; -webkit-user-select: none; transition: all 0.15s;
-    width: 100%;
   }
   .history-btn:hover { color: var(--text-secondary); border-color: var(--border); }
   .history-dropdown {
