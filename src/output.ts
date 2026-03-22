@@ -21,9 +21,14 @@ function scoreColor(score: number): string {
 }
 
 export function printTerminal(report: GeodeReport): void {
+  const w = Math.min(process.stdout.columns || 72, 72);
+  const rule = chalk.gray('─'.repeat(w));
+
   console.log('');
+  console.log(rule);
   console.log(chalk.bold('  geode') + chalk.gray(' — GEO Score Report'));
   console.log(chalk.gray(`  ${report.target}`));
+  console.log(rule);
   console.log('');
   console.log(`  Overall Score: ${scoreColor(report.overall_score)} / 10`);
   console.log('');
@@ -34,7 +39,9 @@ export function printTerminal(report: GeodeReport): void {
   }
 
   console.log('');
+  console.log(rule);
   console.log(chalk.bold('  Action Items'));
+  console.log(rule);
   console.log('');
 
   const seen = new Set<string>();
@@ -50,6 +57,7 @@ export function printTerminal(report: GeodeReport): void {
     console.log('');
   }
 
+  console.log(rule);
   console.log(chalk.gray(`  ${report.metadata.categories_scored} categories scored in ${(report.metadata.duration_ms / 1000).toFixed(1)}s · ${report.metadata.provider}/${report.metadata.model}`));
   console.log('');
 }
