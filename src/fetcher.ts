@@ -6,6 +6,7 @@ import { Readability } from '@mozilla/readability';
 export interface ExtractedContent {
   text: string;
   title: string;
+  rawHtml: string;
   tokensEstimated: number;
   truncated: boolean;
 }
@@ -47,6 +48,7 @@ function extractWithReadability(html: string, url?: string): { text: string; tit
 
 export async function fetchContent(target: string): Promise<ExtractedContent> {
   let raw: string;
+  let rawHtml = '';
   let title = '';
   const isUrl = /^https?:\/\//i.test(target);
 
@@ -64,6 +66,7 @@ export async function fetchContent(target: string): Promise<ExtractedContent> {
         process.exit(1);
       }
       const html = await res.text();
+      rawHtml = html;
       const extracted = extractWithReadability(html, target);
       if (!extracted.text) {
         console.error('Warning: Page content appears empty. This may be a JS-rendered site. Try passing a local file instead.');
@@ -89,6 +92,7 @@ export async function fetchContent(target: string): Promise<ExtractedContent> {
     const ext = path.extname(target).toLowerCase();
 
     if (ext === '.html' || ext === '.htm') {
+      rawHtml = content;
       const extracted = extractWithReadability(content);
       raw = extracted.text;
       title = extracted.title;
@@ -111,5 +115,5 @@ export async function fetchContent(target: string): Promise<ExtractedContent> {
     console.warn('Warning: Content truncated to ~6,000 tokens. Score reflects the first portion only.');
   }
 
-  return { text: raw, title, tokensEstimated: estimateTokens(raw), truncated };
+  return { text: raw, title, rawHtml, tokensEstimated: estimateTokens(raw), truncated };
 }

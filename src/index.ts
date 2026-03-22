@@ -49,7 +49,7 @@ program
     let finalScored;
 
     if (runs === 1) {
-      finalScored = await scoreContent(content.text, provider, opts.verbose, (done, total) => {
+      finalScored = await scoreContent(content.text, content.rawHtml, provider, opts.verbose, (done, total) => {
         spinner.text = `Scoring... [${done}/${total} categories complete]`;
       });
     } else {
@@ -57,7 +57,7 @@ program
       const allRuns: Awaited<ReturnType<typeof scoreContent>>[] = [];
       for (let r = 0; r < runs; r++) {
         spinner.text = `Run ${r + 1}/${runs}...`;
-        allRuns.push(await scoreContent(content.text, provider, opts.verbose));
+        allRuns.push(await scoreContent(content.text, content.rawHtml, provider, opts.verbose));
       }
       // Average scores per category, deduplicate actions by suggestion text
       finalScored = allRuns[0].map((cat, i) => {

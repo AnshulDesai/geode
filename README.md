@@ -23,31 +23,34 @@ geode scores your content across research-backed GEO categories and tells you ex
   https://web.dev/articles/vitals
 ────────────────────────────────────────────────────────────────────────
 
-  Overall Score: 6.1 / 10
+  Overall Score: 6.4 / 10
 
   Citability             ████████░░  8.0
   Content Structure      ███████░░░  7.0
-  Authority Signals      █████░░░░░  5.0
+  Authority Signals      ████░░░░░░  4.0
   Fluency Clarity        ████████░░  8.0
-  Freshness              ████░░░░░░  4.0
-  Schema Technical       ███░░░░░░░  3.0
+  Freshness              ██░░░░░░░░  2.0
+  Schema Technical       ████████░░  8.0
   Topical Depth          ████████░░  8.0
 
 ────────────────────────────────────────────────────────────────────────
   Action Items
 ────────────────────────────────────────────────────────────────────────
 
+  HIGH  Update the publish date to reflect recent revisions
+        → Published: May 4, 2020
+
   HIGH  Include a named author with credentials or a bio
-        → § Published: May 4, 2020
+        → Published: May 4, 2020
 
-  HIGH  Cite sources or provide links to studies and data
-        → Throughout the document
+  HIGH  Add citations and links to studies supporting claims
+        → Overview
 
-  MED   Add an FAQ section with question-based headings
-        → End of the document
+  MED   Add a dedicated FAQ section with common questions
+        → After the 'Changes to Web Vitals' section
 
 ────────────────────────────────────────────────────────────────────────
-  7 categories scored in 8.8s · openai/gpt-4o
+  7 categories scored in 3.8s · openai/gpt-4o
 ```
 
 ## Why geode?
@@ -143,6 +146,8 @@ geode evaluates content across 7 categories, based on research from the [GEO pap
 | **Topical Depth** | Does it fully cover the topic? | Subtopics addressed, entities mentioned, comprehensive coverage |
 
 Each category is scored 1-10 by your LLM. The overall score is the unweighted mean.
+
+The Schema & Technical category evaluates raw HTML (not just extracted text), so it can detect JSON-LD, meta tags, semantic markup, and structured data.
 
 ## Configuration
 

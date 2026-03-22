@@ -1,36 +1,49 @@
-import { type CategoryConfig, type CategoryResult, type LLMProvider, CategoryResultSchema, GeodeRateLimitError } from '../types.js';
+import { type CategoryConfig, type CategoryResult, type LLMProvider, CategoryResultSchema } from '../types.js';
 
 function buildPrompt(config: CategoryConfig, content: string): string {
-  return `You are a GEO (Generative Engine Optimization) analyst evaluating content for AI search visibility.
+  return `You are a GEO (Generative Engine Optimization) analyst. Your job is to evaluate how well content is optimized for being cited by AI search engines (ChatGPT, Perplexity, Gemini, Google AI Overviews).
 
 Evaluate the following content on ${config.name} — ${config.description}.
 
-Score 1-10 based on:
+## Scoring Scale (use the full range)
+- 1-2: Fundamentally broken. Missing almost all signals.
+- 3-4: Below average. Some basics present but major gaps.
+- 5-6: Average. Meets some criteria but clear room for improvement.
+- 7-8: Good. Most criteria met with minor gaps.
+- 9-10: Excellent. Would be a model example for this category.
+
+## Criteria
 ${config.criteria}
 
-Content:
+## Content to evaluate
 ---
 ${content}
 ---
 
-Respond in JSON only. No markdown, no explanation, just the JSON object:
+## Response format
+Respond in JSON only. No markdown fences, no explanation outside the JSON.
+
+IMPORTANT for actions:
+- Each suggestion must be SPECIFIC and DIFFERENT from other suggestions
+- Location must reference a SPECIFIC heading or paragraph, not "throughout the document"
+- If an issue truly applies everywhere, pick the single worst example and point to it
+- Maximum 4 actions, prioritize the highest-impact fixes
+
 {
   "score": <1-10>,
-  "findings": ["<specific observation about the content>"],
+  "findings": ["<specific observation with evidence from the content>"],
   "actions": [
     {
       "priority": "<high|medium|low>",
-      "suggestion": "<specific actionable fix>",
-      "location": "<heading or section where this applies, e.g. '§ Introduction' or '§ Pricing, paragraph 2'>"
+      "suggestion": "<specific, actionable fix — what exactly to change>",
+      "location": "<specific heading, paragraph, or section reference>"
     }
   ]
 }`;
 }
 
 function parseJSON(raw: string): unknown {
-  // Strip markdown fences
   let cleaned = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
-  // Find first { to last }
   const start = cleaned.indexOf('{');
   const end = cleaned.lastIndexOf('}');
   if (start === -1 || end === -1) throw new Error('No JSON object found');

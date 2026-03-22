@@ -27,6 +27,7 @@ async function runWithRetry(
 
 export async function scoreContent(
   content: string,
+  rawHtml: string,
   provider: LLMProvider,
   verbose: boolean,
   onProgress?: (done: number, total: number) => void,
@@ -35,7 +36,12 @@ export async function scoreContent(
 
   // Phase 1: fire all concurrently
   const results = await Promise.allSettled(
-    analyzers.map((a) => a.analyze(content, provider, verbose)),
+    analyzers.map((a) => {
+      const input = a.config.useRawHtml && rawHtml
+        ? rawHtml.slice(0, 12000) // Cap raw HTML to avoid token explosion
+        : content;
+      return a.analyze(input, provider, verbose);
+    }),
   );
 
   const scored: ScoredCategory[] = [];
@@ -56,7 +62,10 @@ export async function scoreContent(
   // Phase 2: retry rate-limited ones sequentially with backoff
   for (const i of retryIndices) {
     try {
-      const result = await runWithRetry(() => analyzers[i].analyze(content, provider, verbose));
+      const input = analyzers[i].config.useRawHtml && rawHtml
+        ? rawHtml.slice(0, 12000)
+        : content;
+      const result = await runWithRetry(() => analyzers[i].analyze(input, provider, verbose));
       scored[i] = { config: analyzers[i].config, result };
     } catch (err: any) {
       scored[i] = { config: analyzers[i].config, result: null, error: err.message };

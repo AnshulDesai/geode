@@ -20,6 +20,7 @@ export interface CategoryConfig {
   key: string;
   description: string;
   criteria: string;
+  useRawHtml?: boolean;
 }
 
 export interface ScoredCategory {
