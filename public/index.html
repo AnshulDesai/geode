@@ -4,15 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>geode — GEO Score Report</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪨</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Instrument+Serif&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
+  @font-face { font-family: 'DM Sans'; font-display: block; }
+  @font-face { font-family: 'Instrument Serif'; font-display: block; }
+  @font-face { font-family: 'JetBrains Mono'; font-display: block; }
+  html { visibility: hidden; }
+  html.fonts-ready { visibility: visible; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
-    --bg: #111110; --surface: #19191a; --raised: #222221;
-    --border: #2c2c2a; --border-subtle: #232322;
+    --bg: #111110; --surface: #181816; --raised: #222220;
+    --border: #2c2c2a; --border-subtle: #232321;
     --text: #ededec; --text-secondary: #a3a3a0; --text-dim: #5c5c58;
-    --accent: #c9a87c; --accent-glow: rgba(201,168,124,0.08);
+    --accent: #c9a87c; --accent-soft: rgba(201,168,124,0.1); --accent-glow: rgba(201,168,124,0.04);
     --high: #e5534b; --mid: #d4a72c; --good: #57ab5a;
     --radius: 8px;
   }
@@ -30,7 +37,8 @@
   }
   .wordmark {
     font-family: 'Instrument Serif', serif; font-size: 20px;
-    color: var(--accent); letter-spacing: -0.01em;
+    color: var(--accent); letter-spacing: -0.01em; flex-shrink: 0;
+    user-select: none; -webkit-user-select: none;
   }
   .url-form { display: flex; flex: 1; max-width: 580px; gap: 6px; align-items: center; }
   .url-input {
@@ -38,45 +46,86 @@
     background: transparent; border: 1px solid var(--border);
     border-radius: 6px; color: var(--text);
     font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
-    outline: none; transition: border-color 0.15s;
+    outline: none; transition: border-color 0.2s;
   }
   .url-input::placeholder { color: var(--text-dim); }
   .url-input:focus { border-color: var(--accent); }
-  .runs-select {
-    padding: 7px 8px; background: transparent; border: 1px solid var(--border);
-    border-radius: 6px; color: var(--text-secondary); font-family: 'DM Sans', sans-serif;
-    font-size: 12px; outline: none; cursor: pointer; appearance: none;
-    text-align: center; width: 62px;
+
+  /* Segmented runs control */
+  .runs-control { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; flex-shrink: 0; }
+  .runs-opt {
+    padding: 6px 10px; font-size: 11px; font-weight: 500; color: var(--text-dim);
+    background: transparent; border: none; cursor: pointer; transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif; user-select: none; -webkit-user-select: none;
   }
-  .runs-select:focus { border-color: var(--accent); }
+  .runs-opt:not(:last-child) { border-right: 1px solid var(--border); }
+  .runs-opt:hover { color: var(--text-secondary); }
+  .runs-opt.active { background: var(--accent-soft); color: var(--accent); }
+
   .score-btn {
     padding: 7px 18px; border: none; border-radius: 6px;
     font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
     cursor: pointer; transition: all 0.15s;
     background: var(--accent); color: var(--bg);
+    user-select: none; -webkit-user-select: none;
   }
   .score-btn:hover { filter: brightness(1.1); }
   .score-btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; }
 
   /* ── Layout ── */
   .main { display: flex; flex: 1; overflow: hidden; }
-  .page-panel { flex: 1; background: #fff; position: relative; }
-  .page-panel iframe { width: 100%; height: 100%; border: none; }
-  .page-empty {
-    height: 100%; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    background: var(--surface); gap: 8px;
-  }
-  .page-empty-text { color: var(--text-dim); font-size: 13px; }
 
   /* ── Score Panel ── */
   .score-panel {
-    width: 380px; flex-shrink: 0; overflow-y: auto;
+    width: 400px; flex-shrink: 0; overflow-y: auto;
     border-right: 1px solid var(--border-subtle);
     background: var(--surface);
   }
   .score-panel::-webkit-scrollbar { width: 3px; }
   .score-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Page Panel ── */
+  .page-panel { flex: 1; position: relative; background: var(--bg); }
+  .page-panel iframe { width: 100%; height: 100%; border: none; border-radius: 0; }
+  .page-frame-wrap {
+    position: absolute; inset: 6px; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 0 0 1px var(--border), 0 8px 32px rgba(0,0,0,0.4);
+    display: none;
+  }
+  .page-frame-wrap iframe { width: 100%; height: 100%; border: none; }
+  .page-click-guard {
+    position: absolute; inset: 0; z-index: 1; cursor: default;
+  }
+  .page-empty {
+    height: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: var(--bg); gap: 16px;
+  }
+
+  /* ── Empty State ── */
+  .empty-hero {
+    font-family: 'Instrument Serif', serif; font-size: 48px;
+    color: var(--accent); opacity: 0.15; letter-spacing: -0.02em;
+    animation: breathe 4s ease-in-out infinite;
+    user-select: none; -webkit-user-select: none;
+  }
+  @keyframes breathe { 0%,100% { opacity: 0.1; } 50% { opacity: 0.2; } }
+  .empty-tagline { color: var(--text-dim); font-size: 14px; text-align: center; line-height: 1.6; user-select: none; -webkit-user-select: none; }
+  .empty-tagline strong { color: var(--text-secondary); font-weight: 500; }
+
+  .panel-empty { padding: 60px 28px; user-select: none; -webkit-user-select: none; }
+  .panel-empty-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 20px;
+  }
+  .ghost-bar { height: 3px; background: var(--raised); border-radius: 2px; margin-bottom: 18px; }
+  .ghost-bar:nth-child(2) { width: 70%; }
+  .ghost-bar:nth-child(3) { width: 85%; }
+  .ghost-bar:nth-child(4) { width: 55%; }
+  .ghost-bar:nth-child(5) { width: 90%; }
+  .ghost-bar:nth-child(6) { width: 60%; }
+  .ghost-bar:nth-child(7) { width: 75%; }
+  .ghost-bar:nth-child(8) { width: 45%; }
 
   /* ── Score Hero ── */
   .score-hero { padding: 40px 28px 32px; }
@@ -84,7 +133,10 @@
     font-family: 'Instrument Serif', serif;
     font-size: 80px; line-height: 0.85; letter-spacing: -0.04em;
     font-variant-numeric: tabular-nums;
+    opacity: 0; transform: translateY(12px);
+    transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16,1,0.3,1);
   }
+  .score-number.revealed { opacity: 1; transform: translateY(0); }
   .score-max {
     font-family: 'DM Sans', sans-serif; font-size: 18px;
     color: var(--text-dim); font-weight: 400; margin-left: 2px;
@@ -97,38 +149,46 @@
   /* ── Categories ── */
   .categories { padding: 0 28px 28px; }
   .section-label {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
-    color: var(--text-dim); font-weight: 600; margin-bottom: 16px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-dim); font-weight: 600; margin-bottom: 18px;
   }
-  .cat { margin-bottom: 12px; }
-  .cat-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .cat { margin-bottom: 14px; opacity: 0; transform: translateX(-8px); transition: opacity 0.4s ease, transform 0.4s ease; }
+  .cat.revealed { opacity: 1; transform: translateX(0); }
+  .cat-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
   .cat-name { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
-  .cat-val { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .cat-track { height: 3px; background: var(--raised); border-radius: 2px; overflow: hidden; }
-  .cat-fill { height: 100%; border-radius: 2px; transition: width 1s cubic-bezier(0.16,1,0.3,1); }
+  .cat-val { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cat-track { height: 5px; background: var(--raised); border-radius: 3px; overflow: hidden; }
+  .cat-fill { height: 100%; border-radius: 3px; width: 0; transition: width 1s cubic-bezier(0.16,1,0.3,1); }
 
   /* ── Actions ── */
   .actions { padding: 0 28px 28px; border-top: 1px solid var(--border-subtle); padding-top: 24px; }
   .action {
-    padding: 12px 0; cursor: pointer;
+    padding: 14px 0; cursor: pointer;
     border-bottom: 1px solid var(--border-subtle);
-    transition: background 0.1s;
+    transition: all 0.15s;
+    opacity: 0; transform: translateY(6px);
   }
+  .action.revealed { opacity: 1; transform: translateY(0); }
   .action:last-child { border-bottom: none; }
+  .action:hover { padding-left: 8px; }
   .action:hover .action-text { color: var(--text); }
-  .action.active { background: var(--accent-glow); margin: 0 -28px; padding: 12px 28px; border-radius: 4px; }
+  .action:hover .action-priority { opacity: 1; }
+  .action.active {
+    background: var(--accent-soft); border-radius: 6px;
+    border-bottom-color: transparent;
+  }
   .action-priority {
     display: inline-block; font-size: 9px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 6px; opacity: 0.8; transition: opacity 0.15s;
   }
   .p-high { color: var(--high); }
   .p-medium { color: var(--mid); }
   .p-low { color: var(--good); }
-  .action-text { font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); transition: color 0.1s; }
+  .action-text { font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); transition: all 0.15s; }
   .action-loc {
-    margin-top: 4px; font-size: 11.5px; color: var(--text-dim);
-    font-family: 'JetBrains Mono', monospace;
+    margin-top: 5px; font-size: 11px; color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace; letter-spacing: -0.01em;
   }
 
   /* ── Meta ── */
@@ -136,33 +196,65 @@
     padding: 16px 28px; border-top: 1px solid var(--border-subtle);
     font-size: 11px; color: var(--text-dim);
     font-family: 'JetBrains Mono', monospace;
+    opacity: 0; transition: opacity 0.4s ease 0.2s;
   }
+  .panel-meta.revealed { opacity: 1; }
 
-  /* ── States ── */
-  .loading { display: none; padding: 80px 28px; }
+  /* ── Loading ── */
+  .loading { display: none; padding: 48px 28px; user-select: none; -webkit-user-select: none; }
   .loading.active { display: block; }
-  .loader-bar { height: 2px; background: var(--raised); border-radius: 1px; overflow: hidden; margin-bottom: 20px; }
+  .loader-bar { height: 2px; background: var(--raised); border-radius: 1px; overflow: hidden; margin-bottom: 24px; }
   .loader-fill {
     height: 100%; width: 30%; background: var(--accent);
     border-radius: 1px; animation: slide 1.2s ease-in-out infinite;
   }
   @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
-  .loading-text { font-size: 13px; color: var(--text-dim); }
+  .loading-text { font-size: 13px; color: var(--text-dim); margin-bottom: 32px; }
+  .loading-cats { display: flex; flex-direction: column; gap: 10px; }
+  .loading-cat { display: flex; align-items: center; gap: 10px; }
+  .loading-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background 0.3s; }
+  .loading-dot.done { background: var(--accent); }
+  .loading-cat-name { font-size: 12px; color: var(--text-dim); transition: color 0.3s; }
+  .loading-cat-name.done { color: var(--text-secondary); }
 
-  .empty-state { padding: 80px 28px; }
-  .empty-text { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
-
+  /* ── History ── */
+  .history-wrap { position: relative; margin-left: auto; flex-shrink: 0; }
+  .history-btn {
+    padding: 6px 10px; font-size: 11px; font-weight: 500; color: var(--text-dim);
+    background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    user-select: none; -webkit-user-select: none; transition: all 0.15s;
+  }
+  .history-btn:hover { color: var(--text-secondary); border-color: var(--border); }
+  .history-dropdown {
+    display: none; position: absolute; top: 100%; right: 0; margin-top: 6px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    width: 360px; max-height: 320px; overflow-y: auto; z-index: 100;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .history-dropdown.open { display: block; }
+  .history-item {
+    padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border-subtle);
+    display: flex; justify-content: space-between; align-items: center;
+    transition: background 0.1s;
+  }
+  .history-item:hover { background: var(--raised); }
+  .history-item:last-child { border-bottom: none; }
+  .history-url { font-size: 12px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .history-score { font-size: 13px; font-weight: 600; margin-left: 12px; flex-shrink: 0; }
+  .history-delete {
+    margin-left: 8px; padding: 2px 6px; font-size: 11px; color: var(--text-dim);
+    background: transparent; border: none; cursor: pointer; border-radius: 3px;
+    transition: all 0.1s; flex-shrink: 0;
+  }
+  .history-delete:hover { color: var(--high); background: rgba(229,83,75,0.1); }
+  .history-empty { padding: 16px; text-align: center; font-size: 12px; color: var(--text-dim); }
   .error {
     margin: 0 28px 16px; padding: 10px 14px;
-    background: rgba(229,83,75,0.08); border-radius: 6px;
-    color: var(--high); font-size: 13px; display: none;
+    background: rgba(229,83,75,0.06); border: 1px solid rgba(229,83,75,0.15);
+    border-radius: 6px; color: var(--high); font-size: 13px; display: none;
   }
   .error.active { display: block; }
-
-  /* ── Utility ── */
-  .sc { color: var(--good); }
-  .sc-mid { color: var(--mid); }
-  .sc-low { color: var(--high); }
 </style>
 </head>
 <body>
@@ -171,25 +263,29 @@
   <div class="wordmark">geode</div>
   <form class="url-form" id="urlForm">
     <input class="url-input" id="urlInput" type="url" placeholder="https://your-blog.com/article" required>
-    <select class="runs-select" id="runsSelect" title="Number of runs to average">
-      <option value="1">1 run</option>
-      <option value="3">3 runs</option>
-      <option value="5">5 runs</option>
-    </select>
+    <div class="runs-control">
+      <button type="button" class="runs-opt active" data-runs="1">1×</button>
+      <button type="button" class="runs-opt" data-runs="3">3×</button>
+      <button type="button" class="runs-opt" data-runs="5">5×</button>
+    </div>
     <button class="score-btn" id="scoreBtn" type="submit">Score</button>
   </form>
+  <div class="history-wrap">
+    <button class="history-btn" id="historyBtn" type="button">History</button>
+    <div class="history-dropdown" id="historyDropdown"></div>
+  </div>
 </header>
 
 <main class="main">
   <aside class="score-panel" id="scorePanel">
     <div class="loading" id="loading">
       <div class="loader-bar"><div class="loader-fill"></div></div>
-      <div class="loading-text">Analyzing 7 categories…</div>
+      <div class="loading-text">Analyzing your content…</div>
+      <div class="loading-cats" id="loadingCats"></div>
     </div>
 
     <div id="results" style="display:none">
       <div class="error" id="error"></div>
-
       <div class="score-hero">
         <div>
           <span class="score-number" id="overallScore">—</span>
@@ -197,57 +293,90 @@
         </div>
         <div class="score-label">GEO Score</div>
       </div>
-
       <div class="categories">
         <div class="section-label">Categories</div>
         <div id="categories"></div>
       </div>
-
       <div class="actions">
         <div class="section-label">Action Items</div>
         <div id="actions"></div>
       </div>
-
       <div class="panel-meta" id="meta"></div>
     </div>
 
-    <div class="empty-state" id="empty">
-      <div class="empty-text">
-        Paste a URL and click <strong>Score</strong> to analyze your content for AI search visibility.
-      </div>
+    <div class="panel-empty" id="empty">
+      <div class="panel-empty-label">Score Preview</div>
+      <div class="ghost-bar"></div><div class="ghost-bar"></div><div class="ghost-bar"></div>
+      <div class="ghost-bar"></div><div class="ghost-bar"></div><div class="ghost-bar"></div>
+      <div class="ghost-bar"></div>
     </div>
   </aside>
 
   <div class="page-panel">
     <div class="page-empty" id="pageEmpty">
-      <div style="font-family:'Instrument Serif',serif;font-size:28px;color:var(--text-dim);opacity:0.4">geode</div>
-      <div class="page-empty-text">Enter a URL to preview and score</div>
+      <div class="empty-hero">geode</div>
+      <div class="empty-tagline">
+        Analyze any page for <strong>AI search visibility</strong>.<br>
+        Paste a URL. Get your score. Fix what matters.
+      </div>
     </div>
-    <iframe id="pageFrame" style="display:none" sandbox="allow-same-origin allow-scripts"></iframe>
+    <div class="page-frame-wrap" id="pageWrap">
+      <div class="page-click-guard" id="clickGuard"></div>
+      <iframe id="pageFrame" sandbox="allow-same-origin allow-scripts"></iframe>
+    </div>
   </div>
 </main>
 
 <script>
+document.fonts.ready.then(() => document.documentElement.classList.add('fonts-ready'));
+// Fallback in case fonts take too long
+setTimeout(() => document.documentElement.classList.add('fonts-ready'), 1000);
+
 const form = document.getElementById('urlForm');
 const input = document.getElementById('urlInput');
 const btn = document.getElementById('scoreBtn');
 const pageFrame = document.getElementById('pageFrame');
+const pageWrap = document.getElementById('pageWrap');
 const pageEmpty = document.getElementById('pageEmpty');
 const loading = document.getElementById('loading');
+const loadingCats = document.getElementById('loadingCats');
 const results = document.getElementById('results');
 const empty = document.getElementById('empty');
 const errorEl = document.getElementById('error');
 
-const runsSelect = document.getElementById('runsSelect');
+let selectedRuns = 1;
+const CAT_NAMES = ['Citability','Content Structure','Authority Signals','Fluency & Clarity','Freshness','Schema & Technical','Topical Depth'];
+
+// Runs control
+document.querySelectorAll('.runs-opt').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.runs-opt').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    selectedRuns = parseInt(b.dataset.runs, 10);
+  });
+});
 
 function sc(s) {
-  if (s >= 7) return ['var(--good)', 'sc'];
-  if (s >= 4) return ['var(--mid)', 'sc-mid'];
-  return ['var(--high)', 'sc-low'];
+  if (s >= 7) return 'var(--good)';
+  if (s >= 4) return 'var(--mid)';
+  return 'var(--high)';
 }
+function catLabel(k) { return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
 
-function catLabel(k) {
-  return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+function showLoadingCats() {
+  loadingCats.innerHTML = '';
+  CAT_NAMES.forEach(name => {
+    loadingCats.innerHTML += `<div class="loading-cat"><div class="loading-dot"></div><span class="loading-cat-name">${name}</span></div>`;
+  });
+  // Simulate progress
+  const dots = loadingCats.querySelectorAll('.loading-dot');
+  const names = loadingCats.querySelectorAll('.loading-cat-name');
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i < dots.length) { dots[i].classList.add('done'); names[i].classList.add('done'); i++; }
+    else clearInterval(iv);
+  }, 800);
+  return iv;
 }
 
 form.addEventListener('submit', async e => {
@@ -256,8 +385,7 @@ form.addEventListener('submit', async e => {
   if (!url) return;
 
   pageEmpty.style.display = 'none';
-  pageFrame.style.display = 'block';
-  pageFrame.src = '/api/proxy?url=' + encodeURIComponent(url);
+  pageWrap.style.display = 'block';
 
   empty.style.display = 'none';
   results.style.display = 'none';
@@ -265,14 +393,16 @@ form.addEventListener('submit', async e => {
   errorEl.classList.remove('active');
   btn.disabled = true;
   btn.textContent = 'Scoring…';
+  const progressIv = showLoadingCats();
 
   try {
     const res = await fetch('/api/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, runs: parseInt(runsSelect.value, 10) }),
+      body: JSON.stringify({ url, runs: selectedRuns }),
     });
     const report = await res.json();
+    clearInterval(progressIv);
     if (report.error) {
       errorEl.textContent = report.error;
       errorEl.classList.add('active');
@@ -280,8 +410,11 @@ form.addEventListener('submit', async e => {
       results.style.display = 'block';
       return;
     }
+    // Load preview AFTER scoring so proxy serves cached HTML
+    pageFrame.src = '/api/proxy?url=' + encodeURIComponent(url);
     render(report);
   } catch (err) {
+    clearInterval(progressIv);
     errorEl.textContent = err.message;
     errorEl.classList.add('active');
     loading.classList.remove('active');
@@ -293,34 +426,57 @@ form.addEventListener('submit', async e => {
 });
 
 function render(r) {
+  // Persist to localStorage history
+  const history = JSON.parse(localStorage.getItem('geode-history') || '[]');
+  // Remove duplicate URL if exists
+  const filtered = history.filter(h => h.target !== r.target);
+  filtered.unshift(r);
+  // Keep last 20
+  localStorage.setItem('geode-history', JSON.stringify(filtered.slice(0, 20)));
+  localStorage.setItem('geode-last-url', r.target);
+  doRender(r);
+}
+
+function doRender(r) {
   loading.classList.remove('active');
   results.style.display = 'block';
 
-  const [color, cls] = sc(r.overall_score);
+  // Score reveal
   const os = document.getElementById('overallScore');
+  os.style.color = sc(r.overall_score);
   os.textContent = r.overall_score.toFixed(1);
-  os.style.color = color;
+  requestAnimationFrame(() => os.classList.add('revealed'));
 
+  // Categories — staggered reveal
   const cEl = document.getElementById('categories');
   cEl.innerHTML = '';
-  for (const [k, v] of Object.entries(r.categories)) {
-    const [c] = sc(v.score);
-    cEl.innerHTML += `<div class="cat">
-      <div class="cat-top">
+  const cats = Object.entries(r.categories);
+  cats.forEach(([k, v], i) => {
+    const c = sc(v.score);
+    const div = document.createElement('div');
+    div.className = 'cat';
+    div.innerHTML = `<div class="cat-top">
         <span class="cat-name">${catLabel(k)}</span>
         <span class="cat-val" style="color:${c}">${v.score.toFixed(1)}</span>
       </div>
-      <div class="cat-track"><div class="cat-fill" style="width:${v.score*10}%;background:${c}"></div></div>
-    </div>`;
-  }
+      <div class="cat-track"><div class="cat-fill" data-width="${v.score*10}" style="background:${c}"></div></div>`;
+    cEl.appendChild(div);
+    setTimeout(() => {
+      div.classList.add('revealed');
+      div.querySelector('.cat-fill').style.width = v.score * 10 + '%';
+    }, 200 + i * 100);
+  });
 
+  // Actions — staggered reveal
   const aEl = document.getElementById('actions');
   aEl.innerHTML = '';
   const seen = new Set();
-  r.actions_ranked.filter(a => {
+  const actions = r.actions_ranked.filter(a => {
     if (seen.has(a.suggestion)) return false;
     seen.add(a.suggestion); return true;
-  }).slice(0, 8).forEach(a => {
+  }).slice(0, 8);
+
+  actions.forEach((a, i) => {
     const d = document.createElement('div');
     d.className = 'action';
     d.innerHTML = `<div class="action-priority p-${a.priority}">${a.priority}</div>
@@ -329,13 +485,86 @@ function render(r) {
     d.onclick = () => {
       document.querySelectorAll('.action').forEach(el => el.classList.remove('active'));
       d.classList.add('active');
-      try { pageFrame.contentWindow.geodeHighlight(a.location); } catch(e) {}
+      try {
+        document.getElementById('clickGuard').style.pointerEvents = 'none';
+        pageFrame.contentWindow.geodeHighlight(a.location);
+        setTimeout(() => document.getElementById('clickGuard').style.pointerEvents = '', 100);
+      } catch(e) {}
     };
     aEl.appendChild(d);
+    setTimeout(() => d.classList.add('revealed'), 600 + cats.length * 100 + i * 80);
   });
 
-  document.getElementById('meta').textContent =
-    `${r.metadata.categories_scored} categories · ${(r.metadata.duration_ms/1000).toFixed(1)}s · ${r.metadata.provider}/${r.metadata.model}`;
+  // Meta
+  const meta = document.getElementById('meta');
+  meta.textContent = `${r.metadata.categories_scored} categories · ${(r.metadata.duration_ms/1000).toFixed(1)}s · ${r.metadata.provider}/${r.metadata.model}`;
+  setTimeout(() => meta.classList.add('revealed'), 800 + cats.length * 100 + actions.length * 80);
+}
+
+// Restore last analysis on page load
+(function restore() {
+  const history = JSON.parse(localStorage.getItem('geode-history') || '[]');
+  const lastUrl = localStorage.getItem('geode-last-url');
+  if (history.length && lastUrl) {
+    const last = history.find(h => h.target === lastUrl);
+    if (last) {
+      input.value = lastUrl;
+      pageEmpty.style.display = 'none';
+      pageWrap.style.display = 'block';
+      pageFrame.src = '/api/proxy?url=' + encodeURIComponent(lastUrl);
+      empty.style.display = 'none';
+      doRender(last);
+    }
+  }
+})();
+
+// History dropdown
+const historyBtn = document.getElementById('historyBtn');
+const historyDropdown = document.getElementById('historyDropdown');
+
+historyBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  historyDropdown.classList.toggle('open');
+  renderHistory();
+});
+document.addEventListener('click', () => historyDropdown.classList.remove('open'));
+historyDropdown.addEventListener('click', e => e.stopPropagation());
+
+function renderHistory() {
+  const history = JSON.parse(localStorage.getItem('geode-history') || '[]');
+  if (!history.length) {
+    historyDropdown.innerHTML = '<div class="history-empty">No analyses yet</div>';
+    return;
+  }
+  historyDropdown.innerHTML = '';
+  history.forEach((r, i) => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const url = r.target.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    item.innerHTML = `
+      <span class="history-url" title="${r.target}">${url}</span>
+      <span class="history-score" style="color:${sc(r.overall_score)}">${r.overall_score.toFixed(1)}</span>
+      <button class="history-delete" title="Delete">✕</button>`;
+    item.querySelector('.history-url').addEventListener('click', () => {
+      input.value = r.target;
+      pageEmpty.style.display = 'none';
+      pageWrap.style.display = 'block';
+      pageFrame.src = '/api/proxy?url=' + encodeURIComponent(r.target);
+      empty.style.display = 'none';
+      results.style.display = 'none';
+      localStorage.setItem('geode-last-url', r.target);
+      doRender(r);
+      historyDropdown.classList.remove('open');
+    });
+    item.querySelector('.history-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const h = JSON.parse(localStorage.getItem('geode-history') || '[]');
+      h.splice(i, 1);
+      localStorage.setItem('geode-history', JSON.stringify(h));
+      renderHistory();
+    });
+    historyDropdown.appendChild(item);
+  });
 }
 </script>
 </body>

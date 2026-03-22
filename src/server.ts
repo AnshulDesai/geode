@@ -10,6 +10,9 @@ import type { LLMProvider } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Cache fetched HTML so proxy serves exactly what was scored
+const htmlCache = new Map<string, string>();
+
 export function startServer(port: number, cliFlags: Record<string, string | undefined>) {
   const app = express();
   app.use(express.json());
@@ -17,22 +20,27 @@ export function startServer(port: number, cliFlags: Record<string, string | unde
   // Serve static UI
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
-  // Proxy target page — strips X-Frame-Options so it can be iframed
+  // Proxy target page — serves cached HTML from scoring to avoid re-fetch/geolocation issues
   app.get('/api/proxy', async (req, res) => {
     const url = req.query.url as string;
     if (!url) return res.status(400).json({ error: 'Missing url parameter' });
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15_000);
-      const response = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Geode/0.1 (+https://github.com/AnshulDesai/geode)',
-          'Accept-Language': (req.headers['accept-language'] as string) || '*',
-        },
-      });
-      clearTimeout(timeout);
-      let html = await response.text();
+      let html = htmlCache.get(url);
+
+      if (!html) {
+        // Fallback: fetch if not cached yet (e.g. page loaded from history before scoring)
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15_000);
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Geode/0.1 (+https://github.com/AnshulDesai/geode)',
+            'Accept-Language': (req.headers['accept-language'] as string) || 'en-US,en;q=0.9',
+          },
+        });
+        clearTimeout(timeout);
+        html = await response.text();
+      }
 
       // Rewrite relative URLs to absolute
       const base = new URL(url);
@@ -63,6 +71,8 @@ export function startServer(port: number, cliFlags: Record<string, string | unde
         : new OpenAIProvider(config.apiKey, config.model);
 
       const content = await fetchContent(url);
+      // Cache raw HTML so proxy serves the same content
+      if (content.rawHtml) htmlCache.set(url, content.rawHtml);
       const start = Date.now();
       const numRuns = Math.min(Math.max(parseInt(runs, 10) || 1, 1), 5);
       let finalScored;
