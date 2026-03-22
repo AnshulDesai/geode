@@ -1,0 +1,41 @@
+{
+  "name": "geode",
+  "version": "0.1.0",
+  "description": "Open-source GEO (Generative Engine Optimization) scorer. BYOK.",
+  "type": "module",
+  "bin": {
+    "geode": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "geo",
+    "seo",
+    "ai-search",
+    "generative-engine-optimization",
+    "cli"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
+    "@mozilla/readability": "^0.6.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/jsdom": "^28.0.1",
+    "@types/node": "^25.5.0",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "js-yaml": "^4.1.1",
+    "jsdom": "^27.0.1",
+    "openai": "^6.32.0",
+    "ora": "^9.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "zod": "^4.3.6"
+  }
+}
