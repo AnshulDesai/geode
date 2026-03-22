@@ -47,7 +47,7 @@ export interface GeodeReport {
 }
 
 export interface GeodeConfig {
-  provider: 'openai' | 'anthropic';
+  provider: 'openai' | 'anthropic' | 'bedrock';
   model: string;
   apiKey: string;
   output: 'terminal' | 'json' | 'both';

@@ -96,6 +96,9 @@ geode score https://example.com --both
 export ANTHROPIC_API_KEY="sk-ant-..."
 geode score https://example.com --provider anthropic --model claude-sonnet-4-20250514
 
+# Use AWS Bedrock (uses ~/.aws/credentials)
+geode score https://example.com --provider bedrock --model us.anthropic.claude-sonnet-4-6 --region us-east-1
+
 # Use a cheaper model
 geode score https://example.com --model gpt-4o-mini
 
@@ -123,7 +126,8 @@ Options:
   --both                    Terminal + JSON to ./geode-report.json
   --runs <n>                Average over N runs (default: 1)
   --model <name>            Override model (e.g. gpt-4o-mini)
-  --provider <name>         openai | anthropic
+  --provider <name>         openai | anthropic | bedrock
+  --region <name>           AWS region for Bedrock (default: us-east-1)
   --config <path>           Path to .geoderc
   --verbose                 Debug output
   -h, --help                Show help
@@ -141,7 +145,8 @@ geode serve [options]
 Options:
   --port <n>                Port number (default: 3000)
   --model <name>            Override model
-  --provider <name>         openai | anthropic
+  --provider <name>         openai | anthropic | bedrock
+  --region <name>           AWS region for Bedrock (default: us-east-1)
 ```
 
 ## Scoring Categories

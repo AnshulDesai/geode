@@ -36,14 +36,14 @@ export function resolveConfig(cliFlags: Record<string, string | undefined>): Geo
   const globalConfig = loadYaml(path.join(process.env.HOME ?? '~', '.geoderc'));
   const fileConfig = { ...globalConfig, ...localConfig };
 
-  const provider = (cliFlags.provider ?? process.env.GEODE_PROVIDER ?? fileConfig.provider ?? DEFAULTS.provider) as 'openai' | 'anthropic';
+  const provider = (cliFlags.provider ?? process.env.GEODE_PROVIDER ?? fileConfig.provider ?? DEFAULTS.provider) as 'openai' | 'anthropic' | 'bedrock';
   const model = cliFlags.model ?? process.env.GEODE_MODEL ?? fileConfig.model ?? DEFAULTS.model;
   const output = (cliFlags.output ?? fileConfig.output ?? DEFAULTS.output) as GeodeConfig['output'];
 
   const keyEnv = fileConfig.api_key_env ?? DEFAULT_KEY_ENVS[provider] ?? '';
   const apiKey = process.env[keyEnv] ?? '';
 
-  if (!apiKey) {
+  if (!apiKey && provider !== 'bedrock' && !process.env.GEODE_SERVE) {
     const expected = keyEnv || DEFAULT_KEY_ENVS[provider];
     console.error(`Error: ${expected} not found. Set the environment variable or configure api_key_env in .geoderc.`);
     process.exit(1);

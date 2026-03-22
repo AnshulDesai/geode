@@ -24,6 +24,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
+    "@aws-sdk/client-bedrock": "^3.1014.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.1014.0",
     "@mozilla/readability": "^0.6.0",
     "@types/express": "^5.0.6",
     "@types/js-yaml": "^4.0.9",

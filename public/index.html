@@ -22,6 +22,11 @@
     --accent: #c9a87c; --accent-soft: rgba(201,168,124,0.1); --accent-glow: rgba(201,168,124,0.04);
     --high: #e5534b; --mid: #d4a72c; --good: #57ab5a;
     --radius: 8px;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-soft: cubic-bezier(0.25, 1, 0.5, 1);
+    --panel-width: 400px;
+    --panel-pad: 28px;
+    --preview-inset: 12px;
   }
   body {
     font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text);
@@ -31,22 +36,31 @@
 
   /* ── Header ── */
   .header {
-    height: 52px; padding: 0 20px;
-    display: flex; align-items: center; gap: 24px;
+    height: 52px; padding: 0;
+    display: flex; align-items: center;
     border-bottom: 1px solid var(--border-subtle); flex-shrink: 0;
+  }
+  .header-left {
+    width: var(--panel-width); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-right: 1px solid var(--border-subtle); height: 100%;
+  }
+  .header-right {
+    flex: 1; padding: 0 var(--preview-inset);
+    display: flex; align-items: center; gap: 8px;
   }
   .wordmark {
     font-family: 'Instrument Serif', serif; font-size: 20px;
     color: var(--accent); letter-spacing: -0.01em; flex-shrink: 0;
     user-select: none; -webkit-user-select: none;
   }
-  .url-form { display: flex; flex: 1; max-width: 580px; gap: 6px; align-items: center; }
+  .url-form { display: flex; flex: 1; gap: 8px; align-items: center; }
   .url-input {
-    flex: 1; padding: 7px 12px;
+    flex: 1; padding: 8px 12px; height: 32px;
     background: transparent; border: 1px solid var(--border);
     border-radius: 6px; color: var(--text);
     font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
-    outline: none; transition: border-color 0.2s;
+    outline: none; transition: border-color 0.2s var(--ease-out-soft), box-shadow 0.2s var(--ease-out-soft);
   }
   .url-input::placeholder { color: var(--text-dim); }
   .url-input:focus { border-color: var(--accent); }
@@ -77,25 +91,27 @@
 
   /* ── Score Panel ── */
   .score-panel {
-    width: 400px; flex-shrink: 0; overflow-y: auto;
+    width: var(--panel-width); flex-shrink: 0; overflow-y: auto;
     border-right: 1px solid var(--border-subtle);
     background: var(--surface);
+    display: flex; flex-direction: column;
   }
-  .score-panel::-webkit-scrollbar { width: 3px; }
-  .score-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .score-panel::-webkit-scrollbar { width: 0; }
+  .score-panel { scrollbar-width: none; }
 
   /* ── Page Panel ── */
   .page-panel { flex: 1; position: relative; background: var(--bg); }
   .page-panel iframe { width: 100%; height: 100%; border: none; border-radius: 0; }
   .page-frame-wrap {
-    position: absolute; inset: 6px; border-radius: 8px; overflow: hidden;
+    position: absolute; inset: var(--preview-inset); border-radius: 8px; overflow: hidden;
     box-shadow: 0 0 0 1px var(--border), 0 8px 32px rgba(0,0,0,0.4);
-    display: none;
+    display: none; transition: box-shadow 0.3s ease;
+  }
+  .page-frame-wrap.flash {
+    box-shadow: 0 0 0 2px var(--accent), 0 8px 32px rgba(0,0,0,0.4);
   }
   .page-frame-wrap iframe { width: 100%; height: 100%; border: none; }
-  .page-click-guard {
-    position: absolute; inset: 0; z-index: 1; cursor: default;
-  }
+  .page-click-guard { display: none; }
   .page-empty {
     height: 100%; display: flex; flex-direction: column;
     align-items: center; justify-content: center;
@@ -113,7 +129,7 @@
   .empty-tagline { color: var(--text-dim); font-size: 14px; text-align: center; line-height: 1.6; user-select: none; -webkit-user-select: none; }
   .empty-tagline strong { color: var(--text-secondary); font-weight: 500; }
 
-  .panel-empty { padding: 60px 28px; user-select: none; -webkit-user-select: none; }
+  .panel-empty { padding: 60px var(--panel-pad); user-select: none; -webkit-user-select: none; }
   .panel-empty-label {
     font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
     color: var(--text-dim); font-weight: 500; margin-bottom: 20px;
@@ -128,7 +144,7 @@
   .ghost-bar:nth-child(8) { width: 45%; }
 
   /* ── Score Hero ── */
-  .score-hero { padding: 40px 28px 32px; }
+  .score-hero { padding: 40px var(--panel-pad) 32px; }
   .score-number {
     font-family: 'Instrument Serif', serif;
     font-size: 80px; line-height: 0.85; letter-spacing: -0.04em;
@@ -147,7 +163,7 @@
   }
 
   /* ── Categories ── */
-  .categories { padding: 0 28px 28px; }
+  .categories { padding: 0 var(--panel-pad) var(--panel-pad); }
   .section-label {
     font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
     color: var(--text-dim); font-weight: 600; margin-bottom: 18px;
@@ -161,7 +177,7 @@
   .cat-fill { height: 100%; border-radius: 3px; width: 0; transition: width 1s cubic-bezier(0.16,1,0.3,1); }
 
   /* ── Actions ── */
-  .actions { padding: 0 28px 28px; border-top: 1px solid var(--border-subtle); padding-top: 24px; }
+  .actions { padding: 0 var(--panel-pad) var(--panel-pad); border-top: 1px solid var(--border-subtle); padding-top: 24px; }
   .action {
     padding: 14px 0; cursor: pointer;
     border-bottom: 1px solid var(--border-subtle);
@@ -170,7 +186,7 @@
   }
   .action.revealed { opacity: 1; transform: translateY(0); }
   .action:last-child { border-bottom: none; }
-  .action:hover { padding-left: 8px; }
+  .action:hover { transform: translateX(8px); }
   .action:hover .action-text { color: var(--text); }
   .action:hover .action-priority { opacity: 1; }
   .action.active {
@@ -193,7 +209,7 @@
 
   /* ── Meta ── */
   .panel-meta {
-    padding: 16px 28px; border-top: 1px solid var(--border-subtle);
+    padding: 16px var(--panel-pad); border-top: 1px solid var(--border-subtle);
     font-size: 11px; color: var(--text-dim);
     font-family: 'JetBrains Mono', monospace;
     opacity: 0; transition: opacity 0.4s ease 0.2s;
@@ -201,7 +217,7 @@
   .panel-meta.revealed { opacity: 1; }
 
   /* ── Loading ── */
-  .loading { display: none; padding: 48px 28px; user-select: none; -webkit-user-select: none; }
+  .loading { display: none; padding: 48px var(--panel-pad); user-select: none; -webkit-user-select: none; }
   .loading.active { display: block; }
   .loader-bar { height: 2px; background: var(--raised); border-radius: 1px; overflow: hidden; margin-bottom: 24px; }
   .loader-fill {
@@ -217,22 +233,78 @@
   .loading-cat-name { font-size: 12px; color: var(--text-dim); transition: color 0.3s; }
   .loading-cat-name.done { color: var(--text-secondary); }
 
+  /* ── Provider/Model (in settings) ── */
+
+  /* ── Settings ── */
+  .settings-btn {
+    width: 32px; height: 32px; color: var(--text-dim);
+    background: transparent; border: 1px solid var(--border); border-radius: 6px;
+    cursor: pointer; user-select: none; -webkit-user-select: none; transition: color 0.2s, border-color 0.2s;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .settings-btn svg { transition: transform 0.4s var(--ease-out-soft); }
+  .settings-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .settings-btn:hover svg { transform: rotate(90deg); }
+  .settings-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .settings-modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    width: 420px; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    user-select: none; -webkit-user-select: none;
+  }
+  .settings-title {
+    font-family: 'Instrument Serif', serif; font-size: 22px; color: var(--text);
+    margin-bottom: 20px;
+  }
+  .settings-field { margin-bottom: 16px; }
+  .settings-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-dim); font-weight: 600; margin-bottom: 6px; display: block;
+  }
+  .settings-input {
+    width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; outline: none; transition: border-color 0.15s;
+  }
+  .settings-input:focus { border-color: var(--accent); }
+  .settings-input { user-select: text; -webkit-user-select: text; }
+  .settings-input::placeholder { color: var(--text-dim); }
+  .settings-hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .settings-save {
+    padding: 8px 20px; background: var(--accent); color: var(--bg); border: none;
+    border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    font-weight: 600; cursor: pointer; margin-top: 8px; transition: opacity 0.15s;
+  }
+  .settings-save:hover { opacity: 0.85; }
+  .settings-saved {
+    display: inline-block; margin-left: 12px; font-size: 12px; color: var(--good);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .settings-saved.show { opacity: 1; }
+
   /* ── History ── */
-  .history-wrap { position: relative; margin-left: auto; flex-shrink: 0; }
+  .history-section {
+    margin-top: auto; padding: 12px var(--panel-pad);
+    border-top: 1px solid var(--border-subtle);
+    text-align: center;
+  }
+  .history-wrap { position: relative; flex-shrink: 0; }
   .history-btn {
     padding: 6px 10px; font-size: 11px; font-weight: 500; color: var(--text-dim);
     background: transparent; border: 1px solid var(--border); border-radius: 6px;
     cursor: pointer; font-family: 'DM Sans', sans-serif;
     user-select: none; -webkit-user-select: none; transition: all 0.15s;
+    width: 100%;
   }
   .history-btn:hover { color: var(--text-secondary); border-color: var(--border); }
   .history-dropdown {
-    display: none; position: absolute; top: 100%; right: 0; margin-top: 6px;
+    position: absolute; bottom: 100%; left: 0; margin-bottom: 6px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-    width: 360px; max-height: 320px; overflow-y: auto; z-index: 100;
+    width: 340px; max-height: 280px; overflow-y: auto; z-index: 100;
     box-shadow: 0 12px 40px rgba(0,0,0,0.5);
   }
-  .history-dropdown.open { display: block; }
   .history-item {
     padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border-subtle);
     display: flex; justify-content: space-between; align-items: center;
@@ -250,29 +322,78 @@
   .history-delete:hover { color: var(--high); background: rgba(229,83,75,0.1); }
   .history-empty { padding: 16px; text-align: center; font-size: 12px; color: var(--text-dim); }
   .error {
-    margin: 0 28px 16px; padding: 10px 14px;
+    margin: 0 var(--panel-pad) 16px; padding: 10px 14px;
     background: rgba(229,83,75,0.06); border: 1px solid rgba(229,83,75,0.15);
     border-radius: 6px; color: var(--high); font-size: 13px; display: none;
   }
   .error.active { display: block; }
+
+  /* ── Select dropdown fix ── */
+  .settings-select {
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c5c58' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .settings-select option { background: var(--surface); color: var(--text); }
+
+  /* ── Animations ── */
+  .url-input { transition: border-color 0.2s var(--ease-out-soft), box-shadow 0.2s var(--ease-out-soft); }
+  .url-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+  .score-btn { transition: all 0.15s var(--ease-out-soft); transform: translateZ(0); }
+  .score-btn:hover { filter: brightness(1.1); transform: scale(1.02); }
+  .score-btn:active { transform: scale(0.97); }
+
+  .settings-btn { transition: all 0.2s var(--ease-out-soft); }
+  .settings-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .history-btn { transition: all 0.15s var(--ease-out-soft); }
+  .history-btn:hover { color: var(--text-secondary); }
+
+  /* Settings modal animation */
+  .settings-overlay { opacity: 0; transition: opacity 0.2s ease; pointer-events: none; display: flex; }
+  .settings-overlay.open { opacity: 1; pointer-events: auto; }
+  .settings-modal { transform: scale(0.96) translateY(8px); transition: transform 0.3s var(--ease-out); }
+  .settings-overlay.open .settings-modal { transform: scale(1) translateY(0); }
+
+  /* History dropdown animation */
+  .history-dropdown { opacity: 0; transform: translateY(-4px); transition: opacity 0.15s ease, transform 0.15s var(--ease-out); pointer-events: none; display: block; }
+  .history-dropdown.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+  .history-item { transition: background 0.1s; }
+
+  /* Score panel section transitions */
+  .score-hero { animation: none; }
+  .cat-track { transition: opacity 0.3s ease; }
+
+  /* Page frame flash */
+  .page-frame-wrap { transition: box-shadow 0.3s var(--ease-out-soft); }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 </style>
 </head>
 <body>
 
 <header class="header">
-  <div class="wordmark">geode</div>
-  <form class="url-form" id="urlForm">
-    <input class="url-input" id="urlInput" type="url" placeholder="https://your-blog.com/article" required>
-    <div class="runs-control">
-      <button type="button" class="runs-opt active" data-runs="1">1×</button>
-      <button type="button" class="runs-opt" data-runs="3">3×</button>
-      <button type="button" class="runs-opt" data-runs="5">5×</button>
-    </div>
-    <button class="score-btn" id="scoreBtn" type="submit">Score</button>
-  </form>
-  <div class="history-wrap">
-    <button class="history-btn" id="historyBtn" type="button">History</button>
-    <div class="history-dropdown" id="historyDropdown"></div>
+  <div class="header-left">
+    <div class="wordmark">geode</div>
+  </div>
+  <div class="header-right">
+    <button class="settings-btn" id="settingsBtn" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <form class="url-form" id="urlForm">
+      <input class="url-input" id="urlInput" type="url" placeholder="https://your-blog.com/article" required>
+      <button class="score-btn" id="scoreBtn" type="submit">Score</button>
+    </form>
   </div>
 </header>
 
@@ -281,7 +402,6 @@
     <div class="loading" id="loading">
       <div class="loader-bar"><div class="loader-fill"></div></div>
       <div class="loading-text">Analyzing your content…</div>
-      <div class="loading-cats" id="loadingCats"></div>
     </div>
 
     <div id="results" style="display:none">
@@ -310,6 +430,13 @@
       <div class="ghost-bar"></div><div class="ghost-bar"></div><div class="ghost-bar"></div>
       <div class="ghost-bar"></div>
     </div>
+
+    <div class="history-section">
+      <div class="history-wrap" style="position:relative">
+        <button class="history-btn" id="historyBtn" type="button">History</button>
+        <div class="history-dropdown" id="historyDropdown"></div>
+      </div>
+    </div>
   </aside>
 
   <div class="page-panel">
@@ -327,6 +454,60 @@
   </div>
 </main>
 
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div class="settings-title" style="margin-bottom:0">Settings</div>
+      <button id="settingsClose" style="background:none;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;padding:4px;line-height:1">✕</button>
+    </div>
+    <div class="settings-field">
+      <label class="settings-label">Provider</label>
+      <select class="settings-input settings-select" id="providerSelect">
+        <option value="openai">OpenAI</option>
+        <option value="anthropic">Anthropic</option>
+        <option value="bedrock">AWS Bedrock</option>
+      </select>
+    </div>
+    <div class="settings-field" id="regionField" style="display:none">
+      <label class="settings-label">AWS Region</label>
+      <select class="settings-input settings-select" id="bedrockRegion">
+        <option value="us-east-1">us-east-1</option>
+        <option value="us-west-2">us-west-2</option>
+        <option value="eu-west-1">eu-west-1</option>
+        <option value="eu-central-1">eu-central-1</option>
+        <option value="ap-southeast-1">ap-southeast-1</option>
+        <option value="ap-northeast-1">ap-northeast-1</option>
+      </select>
+      <div class="settings-hint">Uses your AWS credentials (~/.aws/credentials, env vars, or IAM role).</div>
+    </div>
+    <div class="settings-field">
+      <label class="settings-label">Model</label>
+      <select class="settings-input settings-select" id="modelSelect"></select>
+    </div>
+    <div class="settings-field">
+      <label class="settings-label">Runs per analysis</label>
+      <div class="runs-control" style="width:fit-content">
+        <button type="button" class="runs-opt active" data-runs="1">1×</button>
+        <button type="button" class="runs-opt" data-runs="3">3×</button>
+        <button type="button" class="runs-opt" data-runs="5">5×</button>
+      </div>
+      <div class="settings-hint">More runs = more stable scores, higher cost.</div>
+    </div>
+    <div class="settings-field" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+      <label class="settings-label">OpenAI API Key</label>
+      <input class="settings-input" id="openaiKey" type="password" placeholder="sk-...">
+      <div class="settings-hint">Stored locally in your browser. Never sent to any server except OpenAI.</div>
+    </div>
+    <div class="settings-field">
+      <label class="settings-label">Anthropic API Key</label>
+      <input class="settings-input" id="anthropicKey" type="password" placeholder="sk-ant-...">
+      <div class="settings-hint">Stored locally in your browser. Never sent to any server except Anthropic.</div>
+    </div>
+    <button class="settings-save" id="settingsSave">Save</button>
+    <span class="settings-saved" id="settingsSaved">✓ Saved</span>
+  </div>
+</div>
+
 <script>
 document.fonts.ready.then(() => document.documentElement.classList.add('fonts-ready'));
 // Fallback in case fonts take too long
@@ -339,15 +520,13 @@ const pageFrame = document.getElementById('pageFrame');
 const pageWrap = document.getElementById('pageWrap');
 const pageEmpty = document.getElementById('pageEmpty');
 const loading = document.getElementById('loading');
-const loadingCats = document.getElementById('loadingCats');
 const results = document.getElementById('results');
 const empty = document.getElementById('empty');
 const errorEl = document.getElementById('error');
 
 let selectedRuns = 1;
-const CAT_NAMES = ['Citability','Content Structure','Authority Signals','Fluency & Clarity','Freshness','Schema & Technical','Topical Depth'];
 
-// Runs control
+// Runs control (now in settings)
 document.querySelectorAll('.runs-opt').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.runs-opt').forEach(x => x.classList.remove('active'));
@@ -356,28 +535,92 @@ document.querySelectorAll('.runs-opt').forEach(b => {
   });
 });
 
+const providerSelect = document.getElementById('providerSelect');
+const modelSelect = document.getElementById('modelSelect');
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsOverlay = document.getElementById('settingsOverlay');
+const settingsSave = document.getElementById('settingsSave');
+const settingsSaved = document.getElementById('settingsSaved');
+const openaiKeyInput = document.getElementById('openaiKey');
+const anthropicKeyInput = document.getElementById('anthropicKey');
+
+// Load saved settings
+const savedProvider = localStorage.getItem('geode-provider') || 'openai';
+const savedModel = localStorage.getItem('geode-model') || '';
+providerSelect.value = savedProvider;
+openaiKeyInput.value = localStorage.getItem('geode-key-openai') || '';
+anthropicKeyInput.value = localStorage.getItem('geode-key-anthropic') || '';
+
+async function loadModels() {
+  const p = providerSelect.value;
+  document.getElementById('regionField').style.display = p === 'bedrock' ? '' : 'none';
+
+  let fetchUrl;
+  if (p === 'bedrock') {
+    const region = document.getElementById('bedrockRegion').value || 'us-east-1';
+    fetchUrl = `/api/models?provider=bedrock&region=${region}`;
+  } else {
+    const key = p === 'anthropic'
+      ? localStorage.getItem('geode-key-anthropic') || ''
+      : localStorage.getItem('geode-key-openai') || '';
+    fetchUrl = `/api/models?provider=${p}&apiKey=${encodeURIComponent(key)}`;
+  }
+
+  const res = await fetch(fetchUrl);
+  const models = await res.json();
+
+  if (models.length === 0) {
+    if (p === 'bedrock') {
+      modelSelect.innerHTML = `<option disabled selected>Configure AWS credentials (~/.aws/credentials)</option>`;
+    } else {
+      modelSelect.innerHTML = `<option disabled selected>Add API key below</option>`;
+    }
+    return;
+  }
+
+  modelSelect.innerHTML = '';
+  models.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    modelSelect.appendChild(opt);
+  });
+  const saved = localStorage.getItem('geode-model');
+  if (saved && models.includes(saved)) modelSelect.value = saved;
+}
+loadModels();
+
+providerSelect.addEventListener('change', () => {
+  localStorage.setItem('geode-provider', providerSelect.value);
+  document.getElementById('regionField').style.display = providerSelect.value === 'bedrock' ? '' : 'none';
+  loadModels();
+});
+modelSelect.addEventListener('change', () => localStorage.setItem('geode-model', modelSelect.value));
+
+// Settings modal
+settingsBtn.addEventListener('click', () => settingsOverlay.classList.add('open'));
+settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverlay) settingsOverlay.classList.remove('open'); });
+document.getElementById('settingsClose').addEventListener('click', () => settingsOverlay.classList.remove('open'));
+settingsSave.addEventListener('click', () => {
+  localStorage.setItem('geode-key-openai', openaiKeyInput.value);
+  localStorage.setItem('geode-key-anthropic', anthropicKeyInput.value);
+  settingsSaved.classList.add('show');
+  setTimeout(() => settingsSaved.classList.remove('show'), 1500);
+  loadModels();
+});
+
+function getApiKey() {
+  const p = providerSelect.value;
+  return p === 'anthropic'
+    ? localStorage.getItem('geode-key-anthropic') || ''
+    : localStorage.getItem('geode-key-openai') || '';
+}
+
 function sc(s) {
   if (s >= 7) return 'var(--good)';
   if (s >= 4) return 'var(--mid)';
   return 'var(--high)';
 }
 function catLabel(k) { return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
-
-function showLoadingCats() {
-  loadingCats.innerHTML = '';
-  CAT_NAMES.forEach(name => {
-    loadingCats.innerHTML += `<div class="loading-cat"><div class="loading-dot"></div><span class="loading-cat-name">${name}</span></div>`;
-  });
-  // Simulate progress
-  const dots = loadingCats.querySelectorAll('.loading-dot');
-  const names = loadingCats.querySelectorAll('.loading-cat-name');
-  let i = 0;
-  const iv = setInterval(() => {
-    if (i < dots.length) { dots[i].classList.add('done'); names[i].classList.add('done'); i++; }
-    else clearInterval(iv);
-  }, 800);
-  return iv;
-}
 
 form.addEventListener('submit', async e => {
   e.preventDefault();
@@ -393,16 +636,21 @@ form.addEventListener('submit', async e => {
   errorEl.classList.remove('active');
   btn.disabled = true;
   btn.textContent = 'Scoring…';
-  const progressIv = showLoadingCats();
 
   try {
     const res = await fetch('/api/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, runs: selectedRuns }),
+      body: JSON.stringify({
+        url,
+        runs: selectedRuns,
+        provider: providerSelect.value,
+        model: modelSelect.value,
+        apiKey: getApiKey(),
+        region: document.getElementById('bedrockRegion')?.value || 'us-east-1',
+      }),
     });
     const report = await res.json();
-    clearInterval(progressIv);
     if (report.error) {
       errorEl.textContent = report.error;
       errorEl.classList.add('active');
@@ -414,7 +662,6 @@ form.addEventListener('submit', async e => {
     pageFrame.src = '/api/proxy?url=' + encodeURIComponent(url);
     render(report);
   } catch (err) {
-    clearInterval(progressIv);
     errorEl.textContent = err.message;
     errorEl.classList.add('active');
     loading.classList.remove('active');
@@ -485,6 +732,9 @@ function doRender(r) {
     d.onclick = () => {
       document.querySelectorAll('.action').forEach(el => el.classList.remove('active'));
       d.classList.add('active');
+      // Flash page panel border
+      pageWrap.classList.add('flash');
+      setTimeout(() => pageWrap.classList.remove('flash'), 400);
       try {
         document.getElementById('clickGuard').style.pointerEvents = 'none';
         pageFrame.contentWindow.geodeHighlight(a.location);
@@ -497,7 +747,7 @@ function doRender(r) {
 
   // Meta
   const meta = document.getElementById('meta');
-  meta.textContent = `${r.metadata.categories_scored} categories · ${(r.metadata.duration_ms/1000).toFixed(1)}s · ${r.metadata.provider}/${r.metadata.model}`;
+  meta.innerHTML = `${(r.metadata.duration_ms/1000).toFixed(1)}s<br>${r.metadata.categories_scored} categories scored<br>${r.metadata.provider}/${r.metadata.model}`;
   setTimeout(() => meta.classList.add('revealed'), 800 + cats.length * 100 + actions.length * 80);
 }
 

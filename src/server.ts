@@ -5,6 +5,7 @@ import { resolveConfig } from './config.js';
 import { fetchContent } from './fetcher.js';
 import { OpenAIProvider } from './providers/openai.js';
 import { AnthropicProvider } from './providers/anthropic.js';
+import { BedrockProvider } from './providers/bedrock.js';
 import { scoreContent, buildReport } from './scorer.js';
 import type { LLMProvider } from './types.js';
 
@@ -59,16 +60,78 @@ export function startServer(port: number, cliFlags: Record<string, string | unde
     }
   });
 
+  // List available models for a provider
+  app.get('/api/models', async (req, res) => {
+    const provider = req.query.provider as string;
+    const apiKey = req.query.apiKey as string;
+
+    if (provider === 'bedrock') {
+      const region = (req.query.region as string) || 'us-east-1';
+      const models = await BedrockProvider.listModels(region);
+      return res.json(models);
+    }
+
+    if (provider === 'anthropic') {
+      const key = apiKey || resolveConfig(cliFlags).apiKey;
+      if (!key) return res.json([]);
+      try {
+        const r = await fetch('https://api.anthropic.com/v1/models', {
+          headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+        });
+        if (!r.ok) return res.json([]);
+        const data = await r.json() as { data: { id: string; display_name: string }[] };
+        const models = data.data.map(m => m.id);
+        return res.json(models);
+      } catch {
+        return res.json([]);
+      }
+    }
+
+    // OpenAI
+    const key = apiKey || resolveConfig(cliFlags).apiKey;
+    if (!key) return res.json([]);
+
+    try {
+      const r = await fetch('https://api.openai.com/v1/models', {
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      if (!r.ok) return res.json([]);
+      const data = await r.json() as { data: { id: string }[] };
+      const chat = data.data
+        .map(m => m.id)
+        .filter(id => {
+          if (!/^gpt-/.test(id)) return false;
+          if (/image|tts|transcribe|audio|realtime|instruct|search|codex|embed|16k/.test(id)) return false;
+          if (/-(preview|latest)$/.test(id)) return false;
+          if (/\d{4}/.test(id.replace(/^gpt-[\d.]+/, ''))) return false;
+          return true;
+        })
+        .sort((a, b) => a.localeCompare(b));
+      res.json(chat);
+    } catch {
+      res.json([]);
+    }
+  });
+
   // Score endpoint
   app.post('/api/score', async (req, res) => {
-    const { url, runs = 1 } = req.body;
+    const { url, runs = 1, provider: reqProvider, model: reqModel, apiKey: reqKey } = req.body;
     if (!url) return res.status(400).json({ error: 'Missing url' });
 
     try {
+      // Use request values if provided, fall back to config
       const config = resolveConfig(cliFlags);
-      const provider: LLMProvider = config.provider === 'anthropic'
-        ? new AnthropicProvider(config.apiKey, config.model)
-        : new OpenAIProvider(config.apiKey, config.model);
+      const provider = reqProvider || config.provider;
+      const model = reqModel || config.model;
+      const apiKey = reqKey || config.apiKey;
+
+      if (!apiKey) return res.status(400).json({ error: 'No API key configured. Add one in Settings.' });
+
+      const llm: LLMProvider = provider === 'anthropic'
+        ? new AnthropicProvider(apiKey, model)
+        : provider === 'bedrock'
+        ? new BedrockProvider(req.body.region || 'us-east-1', model)
+        : new OpenAIProvider(apiKey, model);
 
       const content = await fetchContent(url);
       // Cache raw HTML so proxy serves the same content
@@ -78,11 +141,11 @@ export function startServer(port: number, cliFlags: Record<string, string | unde
       let finalScored;
 
       if (numRuns === 1) {
-        finalScored = await scoreContent(content.text, content.rawHtml, provider, false);
+        finalScored = await scoreContent(content.text, content.rawHtml, llm, false);
       } else {
         const allRuns: Awaited<ReturnType<typeof scoreContent>>[] = [];
         for (let r = 0; r < numRuns; r++) {
-          allRuns.push(await scoreContent(content.text, content.rawHtml, provider, false));
+          allRuns.push(await scoreContent(content.text, content.rawHtml, llm, false));
         }
         finalScored = allRuns[0].map((cat, i) => {
           const valid = allRuns.map(run => run[i].result).filter(Boolean);
@@ -99,7 +162,7 @@ export function startServer(port: number, cliFlags: Record<string, string | unde
       }
 
       const durationMs = Date.now() - start;
-      const report = buildReport(url, finalScored, { provider: config.provider, model: config.model }, content.tokensEstimated, durationMs);
+      const report = buildReport(url, finalScored, { provider, model }, content.tokensEstimated, durationMs);
       res.json(report);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -161,6 +224,11 @@ function getHighlightScript(): string {
       /* Suppress common loading bars */
       #nprogress, .pace, .loading-bar, [role="progressbar"],
       .progress-bar, .nprogress-busy { display: none !important; }
+      /* Block all clicks but allow scrolling */
+      a, button, input, select, textarea, [onclick], [role="button"] {
+        pointer-events: none !important;
+        cursor: default !important;
+      }
     \`;
     document.head.appendChild(style);
   `;

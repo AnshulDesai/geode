@@ -5,6 +5,7 @@ import { resolveConfig } from './config.js';
 import { fetchContent } from './fetcher.js';
 import { OpenAIProvider } from './providers/openai.js';
 import { AnthropicProvider } from './providers/anthropic.js';
+import { BedrockProvider } from './providers/bedrock.js';
 import { scoreContent, buildReport } from './scorer.js';
 import { printTerminal, writeJson } from './output.js';
 import { startServer } from './server.js';
@@ -25,7 +26,8 @@ program
   .option('--both', 'Terminal scorecard + JSON to ./geode-report.json')
   .option('--runs <n>', 'Average scores over N runs', '1')
   .option('--model <name>', 'Override model')
-  .option('--provider <name>', 'Override provider: openai | anthropic')
+  .option('--provider <name>', 'Override provider: openai | anthropic | bedrock')
+  .option('--region <name>', 'AWS region for Bedrock (default: us-east-1)')
   .option('--config <path>', 'Path to .geoderc config file')
   .option('--verbose', 'Show debug output')
   .action(async (target: string, opts: any) => {
@@ -38,6 +40,8 @@ program
 
     const provider: LLMProvider = config.provider === 'anthropic'
       ? new AnthropicProvider(config.apiKey, config.model)
+      : config.provider === 'bedrock'
+      ? new BedrockProvider(opts.region || 'us-east-1', config.model)
       : new OpenAIProvider(config.apiKey, config.model);
 
     const spinner = ora('Fetching content...').start();
@@ -109,6 +113,7 @@ program
   .option('--model <name>', 'Override model')
   .option('--provider <name>', 'Override provider: openai | anthropic')
   .action((opts: any) => {
+    process.env.GEODE_SERVE = '1';
     startServer(parseInt(opts.port, 10), { provider: opts.provider, model: opts.model });
   });
 
