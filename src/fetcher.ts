@@ -58,7 +58,7 @@ export async function fetchContent(target: string): Promise<ExtractedContent> {
     try {
       const res = await fetch(target, {
         signal: controller.signal,
-        headers: { 'User-Agent': 'Geode/0.1 (+https://github.com/AnshulDesai/geode)' },
+        headers: { 'User-Agent': 'Geode/0.1 (+https://github.com/AnshulDesai/geode)', 'Accept-Language': 'en-US,en;q=0.9' },
       });
       clearTimeout(timeout);
       if (!res.ok) {

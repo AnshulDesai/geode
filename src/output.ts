@@ -1,6 +1,9 @@
 import chalk from 'chalk';
 import fs from 'node:fs';
 import { type GeodeReport } from './types.js';
+import { categories } from './analyzers/index.js';
+
+const catNames = new Map(categories.map(c => [c.key, c.name]));
 
 function bar(score: number): string {
   const filled = Math.round(score);
@@ -34,7 +37,7 @@ export function printTerminal(report: GeodeReport): void {
   console.log('');
 
   for (const [key, val] of Object.entries(report.categories)) {
-    const name = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    const name = catNames.get(key) ?? key;
     console.log(`  ${name.padEnd(22)} ${bar(val.score)}  ${scoreColor(val.score)}`);
   }
 

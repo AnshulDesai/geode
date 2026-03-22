@@ -111,13 +111,25 @@ export function buildReport(
     return (categoryScores.get(a.category) ?? 10) - (categoryScores.get(b.category) ?? 10);
   });
 
+  // Fuzzy dedup — remove actions that share 60%+ words with an earlier one
+  const deduped: typeof allActions = [];
+  for (const action of allActions) {
+    const words = new Set(action.suggestion.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+    const isDupe = deduped.some(existing => {
+      const existingWords = new Set(existing.suggestion.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+      const overlap = [...words].filter(w => existingWords.has(w)).length;
+      return overlap / Math.min(words.size, existingWords.size) > 0.6;
+    });
+    if (!isDupe) deduped.push(action);
+  }
+
   return {
     version: '0.1.0',
     target,
     timestamp: new Date().toISOString(),
     overall_score: scoreCount > 0 ? Math.round((scoreSum / scoreCount) * 10) / 10 : 0,
     categories,
-    actions_ranked: allActions,
+    actions_ranked: deduped,
     metadata: {
       provider: config.provider,
       model: config.model,

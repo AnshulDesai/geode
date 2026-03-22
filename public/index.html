@@ -666,7 +666,13 @@ function countUp(el, target, color, duration = 800) {
   };
   requestAnimationFrame(update);
 }
-function catLabel(k) { return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
+const CAT_NAMES = {
+  citability: 'Citability', content_structure: 'Content Structure',
+  authority_signals: 'Authority Signals', fluency_clarity: 'Fluency & Clarity',
+  freshness: 'Freshness', schema_technical: 'Schema & Technical',
+  topical_depth: 'Topical Depth'
+};
+function catLabel(k) { return CAT_NAMES[k] || k; }
 
 form.addEventListener('submit', async e => {
   e.preventDefault();
