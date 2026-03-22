@@ -23,12 +23,15 @@ geode scores your content across research-backed GEO categories and tells you ex
   https://web.dev/articles/vitals
 ────────────────────────────────────────────────────────────────────────
 
-  Overall Score: 6.8 / 10
+  Overall Score: 6.1 / 10
 
   Citability             ████████░░  8.0
-  Content Structure      ██████░░░░  6.0
+  Content Structure      ███████░░░  7.0
   Authority Signals      █████░░░░░  5.0
   Fluency Clarity        ████████░░  8.0
+  Freshness              ████░░░░░░  4.0
+  Schema Technical       ███░░░░░░░  3.0
+  Topical Depth          ████████░░  8.0
 
 ────────────────────────────────────────────────────────────────────────
   Action Items
@@ -44,7 +47,7 @@ geode scores your content across research-backed GEO categories and tells you ex
         → End of the document
 
 ────────────────────────────────────────────────────────────────────────
-  4 categories scored in 2.9s · openai/gpt-4o
+  7 categories scored in 8.8s · openai/gpt-4o
 ```
 
 ## Why geode?
@@ -127,7 +130,7 @@ Exit codes:
 
 ## Scoring Categories
 
-geode evaluates content across 4 categories, based on research from the [GEO paper (KDD 2024)](https://arxiv.org/pdf/2311.09735), [First Page Sage's algorithm study](https://firstpagesage.com/seo-blog/generative-engine-optimization-geo-explanation/) (11,128 queries across ChatGPT, Gemini, Perplexity, Claude), and current GEO best practices.
+geode evaluates content across 7 categories, based on research from the [GEO paper (KDD 2024)](https://arxiv.org/pdf/2311.09735), [First Page Sage's algorithm study](https://firstpagesage.com/seo-blog/generative-engine-optimization-geo-explanation/) (11,128 queries across ChatGPT, Gemini, Perplexity, Claude), and current GEO best practices.
 
 | Category | What It Measures | Key Signals |
 |----------|-----------------|-------------|
@@ -135,6 +138,9 @@ geode evaluates content across 4 categories, based on research from the [GEO pap
 | **Content Structure** | Can AI parse and navigate it? | Answer-first formatting, heading hierarchy, FAQs, lists |
 | **Authority Signals** | Does it look trustworthy? | Author credentials, cited sources, E-E-A-T signals |
 | **Fluency & Clarity** | Is it readable and skimmable? | Concise sentences, natural language, consistent tone |
+| **Freshness** | Is it current? | Recent publish/update dates, current data, no stale references |
+| **Schema & Technical** | Is it machine-readable? | Structured data, semantic HTML, meta tags, crawl accessibility |
+| **Topical Depth** | Does it fully cover the topic? | Subtopics addressed, entities mentioned, comprehensive coverage |
 
 Each category is scored 1-10 by your LLM. The overall score is the unweighted mean.
 
@@ -165,14 +171,19 @@ graph TD
     F --> H[Content Structure]
     F --> I[Authority Signals]
     F --> J[Fluency & Clarity]
+    F --> G2[Freshness]
+    F --> H2[Schema & Technical]
+    F --> I2[Topical Depth]
     G --> K[Score aggregation]
     H --> K
     I --> K
     J --> K
-    K --> L[Terminal scorecard / JSON report]
+    G2 --> K
+    H2 --> K
+    I2 --> K
 ```
 
-All 4 LLM calls run concurrently. If rate-limited, geode falls back to sequential with exponential backoff.
+All 7 LLM calls run concurrently. If rate-limited, geode falls back to sequential with exponential backoff.
 
 ## Cost Per Run
 
@@ -201,7 +212,7 @@ Cost scales linearly with article length. Use `gpt-4o-mini` or `claude-haiku` fo
 - [x] CLI scorer with 4 categories
 - [x] OpenAI + Anthropic support
 - [x] JSON output mode
-- [ ] Freshness, Schema & Technical, Topical Depth categories
+- [x] Freshness, Schema & Technical, Topical Depth categories
 - [ ] Custom category weights in `.geoderc`
 - [ ] `--quick` mode (single prompt, ~5x cheaper)
 - [ ] Batch mode (`--batch urls.txt`)
