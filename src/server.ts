@@ -7,6 +7,7 @@ import { OpenAIProvider } from './providers/openai.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { BedrockProvider } from './providers/bedrock.js';
 import { scoreContent, scoreContentQuick, scoreContentDeep, buildReport } from './scorer.js';
+import { rewriteContent } from './rewriter.js';
 import type { LLMProvider } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -179,6 +180,60 @@ export function startServer(port: number, cliFlags: Record<string, string | unde
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
+  });
+
+  // Generate & Score: rewrite selected action items, re-score
+  let lastOptimizedHtml = '';
+
+  app.post('/api/generate', async (req, res) => {
+    try {
+      const { url, actions, provider: reqProvider, model: reqModel, apiKey: reqKey, region: reqRegion, useOptimized = false } = req.body;
+      if (!url || !actions?.length) return res.status(400).json({ error: 'url and actions required' });
+
+      const config = resolveConfig(cliFlags);
+      const provider = reqProvider || config.provider;
+      const model = reqModel || config.model;
+      const apiKey = reqKey || config.apiKey;
+      const llm: LLMProvider = provider === 'anthropic'
+        ? new AnthropicProvider(apiKey ?? '', model as any)
+        : provider === 'bedrock'
+        ? new BedrockProvider(reqRegion || 'us-east-1', model as any)
+        : new OpenAIProvider(apiKey ?? '', model as any);
+
+      let sourceHtml: string;
+      let sourceText: string;
+      if (useOptimized && lastOptimizedHtml) {
+        sourceHtml = lastOptimizedHtml;
+        const $ = (await import('cheerio')).load(lastOptimizedHtml);
+        sourceText = $('body').text().replace(/\s+/g, ' ').trim();
+      } else {
+        const content = await fetchContent(url);
+        if (content.rawHtml) htmlCache.set(url, content.rawHtml);
+        sourceHtml = content.rawHtml;
+        sourceText = content.text;
+      }
+
+      const optimizedHtml = await rewriteContent(sourceHtml, sourceText, actions, llm);
+      lastOptimizedHtml = optimizedHtml;
+
+      // Re-score the optimized content
+      const headMatch = optimizedHtml.match(/<head[^>]*>[\s\S]*?<\/head>/i);
+      const $ = (await import('cheerio')).load(optimizedHtml);
+      const optimizedText = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 12000);
+      const rawForScoring = (headMatch ? headMatch[0] : '') + optimizedHtml.slice(0, 12000);
+
+      const scored = await scoreContent(optimizedText, rawForScoring, llm, false);
+      const report = buildReport(url, scored, { provider, model: model || '' }, 0, 0);
+
+      res.json(report);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get('/api/optimized', (_req, res) => {
+    if (!lastOptimizedHtml) return res.status(404).send('No optimized content available');
+    res.type('html').send(lastOptimizedHtml);
   });
 
   app.listen(port, () => {

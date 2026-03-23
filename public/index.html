@@ -186,7 +186,7 @@
   .cat-fill { height: 100%; border-radius: 3px; width: 0; transition: width 1s cubic-bezier(0.16,1,0.3,1); }
 
   /* ── Actions ── */
-  .actions { padding: 0 var(--panel-pad) var(--panel-pad); border-top: 1px solid var(--border-subtle); padding-top: 24px; }
+  .actions { padding: 24px var(--panel-pad); border-top: 1px solid var(--border-subtle); }
   .action {
     padding: 14px var(--panel-pad); margin: 0 calc(-1 * var(--panel-pad));
     border-bottom: 1px solid var(--border-subtle);
@@ -211,6 +211,21 @@
     margin-top: 5px; font-size: 11px; color: var(--text-dim);
     font-family: 'JetBrains Mono', monospace; letter-spacing: -0.01em;
   }
+  .action { display: flex; gap: 12px; align-items: center; }
+  .action-check { display: flex; flex-shrink: 0; }
+  .action-cb { appearance: none; -webkit-appearance: none; width: 15px; height: 15px; border: 1.5px solid var(--border); border-radius: 3px; background: transparent; cursor: pointer; position: relative; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+  .action-cb:checked { background: var(--accent); border-color: var(--accent); }
+  .action-cb:checked::after { content: ''; width: 4px; height: 7px; border: solid var(--bg); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); margin-top: -1px; }
+  .action-cb:hover { border-color: var(--accent); }
+  .generate-btn {
+    display: block; margin: 20px auto 0; padding: 10px 24px; border: 1px solid var(--accent);
+    width: auto;
+    background: transparent; color: var(--accent); font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500; letter-spacing: 0.04em; border-radius: 6px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .generate-btn:hover { background: var(--accent-soft); }
+  .generate-btn:disabled { opacity: 0.5; cursor: default; }
 
   /* ── Meta ── */
   .panel-meta {
@@ -541,6 +556,9 @@ const empty = document.getElementById('empty');
 const errorEl = document.getElementById('error');
 
 let selectedRuns = 1;
+let currentUrl = '';
+let currentActions = [];
+let originalReport = null;
 let analysisMode = 'standard';
 const modeHints = {
   lite: 'Single prompt, ~5× cheaper. Good for quick checks and batch scoring.',
@@ -711,6 +729,9 @@ form.addEventListener('submit', async e => {
   e.preventDefault();
   const url = input.value.trim();
   if (!url) return;
+  currentUrl = url;
+  localStorage.removeItem('geode-optimized');
+  document.getElementById('viewToggle')?.remove();
 
   pageEmpty.style.display = 'none';
   pageWrap.style.display = 'block';
@@ -883,21 +904,48 @@ function highlightInPreview(index) {
   }
 }
 
-function render(r) {
-  // Persist to localStorage history
-  const history = JSON.parse(localStorage.getItem('geode-history') || '[]');
-  // Remove duplicate URL if exists
-  const filtered = history.filter(h => h.target !== r.target);
-  filtered.unshift(r);
-  // Keep last 20
-  localStorage.setItem('geode-history', JSON.stringify(filtered.slice(0, 20)));
-  localStorage.setItem('geode-last-url', r.target);
+function render(r, isOptimized = false) {
+  if (!isOptimized) {
+    originalReport = r;
+    // Persist to localStorage history
+    const history = JSON.parse(localStorage.getItem('geode-history') || '[]');
+    const filtered = history.filter(h => h.target !== r.target);
+    filtered.unshift(r);
+    localStorage.setItem('geode-history', JSON.stringify(filtered.slice(0, 20)));
+    localStorage.setItem('geode-last-url', r.target);
+  }
   doRender(r);
+}
+
+function showToggle(originalUrl, origReport, optReport) {
+  // Remove existing toggle
+  document.getElementById('viewToggle')?.remove();
+  const toggle = document.createElement('div');
+  toggle.id = 'viewToggle';
+  toggle.style.cssText = 'text-align:center;padding:10px 0 2px;';
+  toggle.innerHTML = `<div class="runs-control" style="width:fit-content;margin:0 auto">
+    <button type="button" class="mode-opt" id="toggleOriginal">Original</button>
+    <button type="button" class="mode-opt active" id="toggleOptimized">Optimized</button>
+  </div>`;
+  document.getElementById('results').prepend(toggle);
+  document.getElementById('toggleOriginal').addEventListener('click', () => {
+    pageFrame.src = originalUrl;
+    document.getElementById('toggleOriginal').classList.add('active');
+    document.getElementById('toggleOptimized').classList.remove('active');
+    doRender(origReport);
+  });
+  document.getElementById('toggleOptimized').addEventListener('click', () => {
+    pageFrame.src = '/api/optimized';
+    document.getElementById('toggleOptimized').classList.add('active');
+    document.getElementById('toggleOriginal').classList.remove('active');
+    doRender(optReport);
+  });
 }
 
 function doRender(r) {
   loading.classList.remove('active');
   results.style.display = 'block';
+  currentUrl = r.target || currentUrl;
 
   // Reset animation states
   document.getElementById('overallScore').classList.remove('revealed', 'pulse');
@@ -939,13 +987,15 @@ function doRender(r) {
     if (seen.has(a.suggestion)) return false;
     seen.add(a.suggestion); return true;
   }).slice(0, 8);
+  currentActions = actions;
 
   actions.forEach((a, i) => {
     const d = document.createElement('div');
     d.className = 'action';
-    d.innerHTML = `<div class="action-priority p-${a.priority}">${a.priority}</div>
+    d.innerHTML = `<label class="action-check" onclick="event.stopPropagation()"><input type="checkbox" class="action-cb" data-idx="${i}"></label>
+      <div style="flex:1"><div class="action-priority p-${a.priority}">${a.priority}</div>
       <div class="action-text">${a.suggestion}</div>
-      <div class="action-loc">→ ${a.location}</div>`;
+      <div class="action-loc">→ ${a.location}</div></div>`;
     d.onclick = () => {
       const wasActive = d.classList.contains('active');
       document.querySelectorAll('.action').forEach(el => el.classList.remove('active'));
@@ -958,6 +1008,46 @@ function doRender(r) {
     aEl.appendChild(d);
     setTimeout(() => d.classList.add('revealed'), 600 + cats.length * 100 + i * 80);
   });
+
+  // Generate & Score button
+  const genBtn = document.createElement('button');
+  genBtn.textContent = 'Generate & Score';
+  genBtn.className = 'generate-btn';
+  genBtn.onclick = async () => {
+    const selected = [...document.querySelectorAll('.action-cb:checked')].map(cb => currentActions[cb.dataset.idx]);
+    if (!selected.length) return;
+    genBtn.disabled = true;
+    genBtn.textContent = 'Generating…';
+    results.style.display = 'none';
+    loading.style.display = '';
+    loading.classList.add('active');
+    startLoadingMessages();
+    const savedOriginalReport = originalReport;
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: currentUrl,
+          actions: selected,
+          provider: providerSelect.value,
+          model: modelSelect.value,
+          apiKey: getApiKey(),
+          region: document.getElementById('bedrockRegion')?.value || 'us-east-1',
+          useOptimized: !!localStorage.getItem('geode-optimized'),
+        }),
+      });
+      const report = await res.json();
+      if (report.error) { alert(report.error); return; }
+      localStorage.setItem('geode-optimized', JSON.stringify(report));
+      const originalUrl = '/api/proxy?url=' + encodeURIComponent(currentUrl);
+      pageFrame.src = '/api/optimized';
+      render(report, true);
+      showToggle(originalUrl, savedOriginalReport, report);
+    } catch(e) { alert(e.message); }
+    finally { stopLoadingMessages(); genBtn.disabled = false; genBtn.textContent = 'Generate & Score'; }
+  };
+  aEl.appendChild(genBtn);
 
   // Meta
   const meta = document.getElementById('meta');
@@ -976,11 +1066,19 @@ function doRender(r) {
     const last = history.find(h => h.target === lastUrl);
     if (last) {
       input.value = lastUrl;
+      currentUrl = lastUrl;
+      originalReport = last;
       pageEmpty.style.display = 'none';
       pageWrap.style.display = 'block';
       pageFrame.src = '/api/proxy?url=' + encodeURIComponent(lastUrl);
       empty.style.display = 'none';
-      doRender(last);
+      const opt = JSON.parse(localStorage.getItem('geode-optimized') || 'null');
+      if (opt && opt.target === lastUrl) {
+        doRender(opt);
+        showToggle('/api/proxy?url=' + encodeURIComponent(lastUrl), last, opt);
+      } else {
+        doRender(last);
+      }
     }
   }
 })();

@@ -130,6 +130,8 @@ Options:
   --region <name>           AWS region for Bedrock (default: us-east-1)
   --config <path>           Path to .geoderc
   --verbose                 Debug output
+  --lite                    Single-prompt mode (~5x cheaper)
+  --deep                    Full 7-category dedicated analysis
   -h, --help                Show help
   -V, --version             Show version
 
@@ -154,7 +156,10 @@ Options:
 Run `geode serve` to launch the inspector — a split-panel interface with your score report on the left and a live page preview on the right.
 
 - Click action items to scroll and highlight the relevant section on the page
+- Select action items and click **Generate & Score** to apply fixes and re-score
+- Toggle between Original and Optimized views to compare changes
 - Configure provider, model, and API keys in Settings (⚙)
+- Choose analysis mode: Lite (1 prompt), Standard (2-pass), or Deep (7 dedicated analyses)
 - Analysis history persists across sessions (stored in your browser)
 - Supports multi-run averaging (1×, 3×, 5×) for stable scores
 
@@ -248,8 +253,10 @@ Cost scales linearly with article length. Use `gpt-4o-mini` or `claude-haiku` fo
 - [x] JSON output mode
 - [x] Freshness, Schema & Technical, Topical Depth categories
 - [x] Web UI with page inspector (`geode serve`)
-- [ ] Custom category weights in `.geoderc`
-- [ ] `--lite` mode (single prompt, ~5x cheaper)
+- [x] `--lite` mode (single prompt, ~5x cheaper)
+- [x] Generate & Score (apply fixes, re-score)
+- [ ] Autopilot mode (iterative auto-fix until target score)
+- [ ] Visual validation with Playwright (verify generated changes render correctly)
 - [ ] Batch mode (`--batch urls.txt`)
 - [ ] CI/CD integration (GitHub Action, pre-commit hook)
 - [ ] Historical score tracking
