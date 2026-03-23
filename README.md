@@ -249,7 +249,7 @@ Cost scales linearly with article length. Use `gpt-4o-mini` or `claude-haiku` fo
 - [x] Freshness, Schema & Technical, Topical Depth categories
 - [x] Web UI with page inspector (`geode serve`)
 - [ ] Custom category weights in `.geoderc`
-- [ ] `--quick` mode (single prompt, ~5x cheaper)
+- [ ] `--lite` mode (single prompt, ~5x cheaper)
 - [ ] Batch mode (`--batch urls.txt`)
 - [ ] CI/CD integration (GitHub Action, pre-commit hook)
 - [ ] Historical score tracking

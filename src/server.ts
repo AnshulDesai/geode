@@ -6,7 +6,7 @@ import { fetchContent } from './fetcher.js';
 import { OpenAIProvider } from './providers/openai.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { BedrockProvider } from './providers/bedrock.js';
-import { scoreContent, buildReport } from './scorer.js';
+import { scoreContent, scoreContentQuick, scoreContentDeep, buildReport } from './scorer.js';
 import type { LLMProvider } from './types.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -123,7 +123,7 @@ export function startServer(port: number, cliFlags: Record<string, string | unde
 
   // Score endpoint
   app.post('/api/score', async (req, res) => {
-    const { url, runs = 1, provider: reqProvider, model: reqModel, apiKey: reqKey } = req.body;
+    const { url, runs = 1, provider: reqProvider, model: reqModel, apiKey: reqKey, region: reqRegion, lite = false, mode = 'standard' } = req.body;
     if (!url) return res.status(400).json({ error: 'Missing url' });
 
     try {
@@ -148,8 +148,12 @@ export function startServer(port: number, cliFlags: Record<string, string | unde
       const numRuns = Math.min(Math.max(parseInt(runs, 10) || 1, 1), 5);
       let finalScored;
 
-      if (numRuns === 1) {
+      if (lite || mode === 'lite') {
+        finalScored = await scoreContentQuick(content.text, content.rawHtml, llm, false);
+      } else if (mode === 'deep') {
         finalScored = await scoreContent(content.text, content.rawHtml, llm, false);
+      } else if (numRuns === 1) {
+        finalScored = await scoreContentDeep(content.text, content.rawHtml, llm, false);
       } else {
         const allRuns: Awaited<ReturnType<typeof scoreContent>>[] = [];
         for (let r = 0; r < numRuns; r++) {

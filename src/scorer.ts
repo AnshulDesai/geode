@@ -1,5 +1,7 @@
 import { type ScoredCategory, type GeodeReport, type Action, GeodeRateLimitError, type LLMProvider } from './types.js';
-import { analyzers } from './analyzers/index.js';
+import { analyzers, categories } from './analyzers/index.js';
+import { quickScore } from './analyzers/quick.js';
+import { deepScore } from './analyzers/deep.js';
 
 const BACKOFF_BASE = 1000;
 const BACKOFF_MAX = 30_000;
@@ -22,6 +24,33 @@ async function runWithRetry(
       }
       throw err;
     }
+  }
+}
+
+export async function scoreContentDeep(
+  content: string,
+  rawHtml: string,
+  provider: LLMProvider,
+  verbose: boolean,
+): Promise<ScoredCategory[]> {
+  return deepScore(content, rawHtml, provider, verbose);
+}
+
+export async function scoreContentQuick(
+  content: string,
+  rawHtml: string,
+  provider: LLMProvider,
+  verbose: boolean,
+): Promise<ScoredCategory[]> {
+  try {
+    const results = await quickScore(content, rawHtml, provider, verbose);
+    return categories.map(c => ({
+      config: c,
+      result: results.get(c.key) ?? null,
+      error: results.has(c.key) ? undefined : 'Not returned in lite mode',
+    }));
+  } catch (err: any) {
+    return categories.map(c => ({ config: c, result: null, error: err.message }));
   }
 }
 

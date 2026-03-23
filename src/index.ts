@@ -6,7 +6,7 @@ import { fetchContent } from './fetcher.js';
 import { OpenAIProvider } from './providers/openai.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { BedrockProvider } from './providers/bedrock.js';
-import { scoreContent, buildReport } from './scorer.js';
+import { scoreContent, scoreContentQuick, scoreContentDeep, buildReport } from './scorer.js';
 import { printTerminal, writeJson } from './output.js';
 import { startServer } from './server.js';
 import type { LLMProvider } from './types.js';
@@ -30,6 +30,8 @@ program
   .option('--region <name>', 'AWS region for Bedrock (default: us-east-1)')
   .option('--config <path>', 'Path to .geoderc config file')
   .option('--verbose', 'Show debug output')
+  .option('--lite', 'Single-prompt mode (~5x cheaper, slightly less granular)')
+  .option('--deep', 'Two-pass mode (lite + deep dive on weakest categories)')
   .action(async (target: string, opts: any) => {
     const outputMode = opts.json ? 'json' : opts.both ? 'both' : undefined;
     const config = resolveConfig({
@@ -53,10 +55,17 @@ program
     const start = Date.now();
     let finalScored;
 
-    if (runs === 1) {
+    if (opts.lite) {
+      spinner.text = 'Lite scoring (single prompt)...';
+      finalScored = await scoreContentQuick(content.text, content.rawHtml, provider, opts.verbose);
+    } else if (opts.deep) {
+      spinner.text = 'Deep scoring (7 categories)...';
       finalScored = await scoreContent(content.text, content.rawHtml, provider, opts.verbose, (done, total) => {
-        spinner.text = `Scoring... [${done}/${total} categories complete]`;
+        spinner.text = `Deep scoring... [${done}/${total} categories]`;
       });
+    } else if (runs === 1) {
+      spinner.text = 'Scoring (pass 1: overview)...';
+      finalScored = await scoreContentDeep(content.text, content.rawHtml, provider, opts.verbose);
     } else {
       // Multi-run: average scores, deduplicate actions
       const allRuns: Awaited<ReturnType<typeof scoreContent>>[] = [];

@@ -73,6 +73,14 @@
   .runs-opt:not(:last-child) { border-right: 1px solid var(--border); }
   .runs-opt:hover { color: var(--text-secondary); }
   .runs-opt.active { background: var(--accent-soft); color: var(--accent); }
+  .mode-opt {
+    padding: 6px 10px; font-size: 11px; font-weight: 500; color: var(--text-dim);
+    background: transparent; border: none; cursor: pointer; transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif; user-select: none; -webkit-user-select: none;
+  }
+  .mode-opt:not(:last-child) { border-right: 1px solid var(--border); }
+  .mode-opt:hover { color: var(--text-secondary); }
+  .mode-opt.active { background: var(--accent-soft); color: var(--accent); }
 
   .score-btn {
     padding: 7px 18px; border: none; border-radius: 6px;
@@ -485,6 +493,15 @@
       <select class="settings-input settings-select" id="modelSelect"></select>
     </div>
     <div class="settings-field">
+      <label class="settings-label">Analysis mode</label>
+      <div class="runs-control" style="width:fit-content">
+        <button type="button" class="mode-opt" data-mode="lite">Lite</button>
+        <button type="button" class="mode-opt active" data-mode="standard">Standard</button>
+        <button type="button" class="mode-opt" data-mode="deep">Deep</button>
+      </div>
+      <div class="settings-hint" id="modeHint">Lite + deep dive on weakest categories. Balances cost and quality.</div>
+    </div>
+    <div class="settings-field">
       <label class="settings-label">Runs per analysis</label>
       <div class="runs-control" style="width:fit-content">
         <button type="button" class="runs-opt active" data-runs="1">1×</button>
@@ -524,6 +541,22 @@ const empty = document.getElementById('empty');
 const errorEl = document.getElementById('error');
 
 let selectedRuns = 1;
+let analysisMode = 'standard';
+const modeHints = {
+  lite: 'Single prompt, ~5× cheaper. Good for quick checks and batch scoring.',
+  standard: 'Lite + deep dive on weakest categories. Balances cost and quality.',
+  deep: '7 dedicated analyses, one per category. Most thorough and accurate.',
+};
+
+// Mode toggle
+document.querySelectorAll('.mode-opt').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.mode-opt').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    analysisMode = b.dataset.mode;
+    document.getElementById('modeHint').textContent = modeHints[analysisMode];
+  });
+});
 
 // Runs control (now in settings)
 document.querySelectorAll('.runs-opt').forEach(b => {
@@ -701,6 +734,8 @@ form.addEventListener('submit', async e => {
         model: modelSelect.value,
         apiKey: getApiKey(),
         region: document.getElementById('bedrockRegion')?.value || 'us-east-1',
+        lite: analysisMode === 'lite',
+        mode: analysisMode,
       }),
     });
     const report = await res.json();
